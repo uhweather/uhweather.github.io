@@ -1,0 +1,36 @@
+# Local development and verification.
+#
+#   docker compose up dev       -> hot-reloading dev server   http://localhost:5273
+#   docker compose up preview   -> production build, served   http://localhost:4273
+#
+# `preview` is the honest rehearsal for production: it serves the same `vite build`
+# output that GitHub Pages will, so what you see locally is what deploys.
+#
+# Ports are overridable (DEV_PORT / PREVIEW_PORT) because the Vite defaults
+# 5173/4173 often collide with other projects on the same machine.
+services:
+  dev:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install --prefer-offline --no-audit --no-fund && npm run dev -- --port 5273"
+    ports:
+      - "${DEV_PORT:-5273}:5273"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      # Bind-mounted source on macOS/Windows needs polling for file watching.
+      - CHOKIDAR_USEPOLLING=true
+
+  preview:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install --prefer-offline --no-audit --no-fund && npm run build && npm run preview -- --port 4273"
+    ports:
+      - "${PREVIEW_PORT:-4273}:4273"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+
+volumes:
+  node_modules:

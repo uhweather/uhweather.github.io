@@ -1,0 +1,228 @@
+@import 'tailwindcss';
+
+/*
+ * Semantic colour tokens.
+ *
+ * Both themes are defined by hand rather than derived by inverting greys, so
+ * dark mode reads as a deliberate night-operations palette instead of a washed
+ * out negative. Components use semantic names (bg-surface, text-muted) and get
+ * the right value in either theme with no `dark:` variant, which keeps the two
+ * palettes from drifting apart as pages are added.
+ *
+ * Hue: University of Hawai‘i green (#024731) anchors the brand, deep teal
+ * carries interaction, gold accents, red reserved strictly for hazards.
+ */
+:root {
+  --bg: #f7f7f5;
+  --bg-subtle: #eceeeb;
+  --surface: #ffffff;
+  --surface-2: #f4f5f3;
+  --surface-hover: #eef0ed;
+  --border: #dcded9;
+  --border-strong: #c3c7c0;
+
+  --ink: #1c1917;
+  --muted: #5c6560;
+  --faint: #8a918c;
+
+  --brand: #024731;
+  --brand-deep: #013225;
+  --brand-ink: #ecfdf5;
+  --brand-soft: #e7f1ec;
+
+  --primary: #0f766e;
+  --primary-hover: #115e57;
+  --primary-ink: #ffffff;
+  --primary-soft: #d7eeeb;
+
+  --accent: #a16207;
+  --accent-soft: #fdf3d7;
+
+  --danger: #b91c1c;
+  --danger-soft: #fdeaea;
+  --warn: #a16207;
+  --warn-soft: #fdf3d7;
+
+  --shadow: 0 1px 2px rgb(28 25 23 / 0.05), 0 1px 3px rgb(28 25 23 / 0.06);
+  --shadow-lg: 0 10px 32px -8px rgb(1 50 37 / 0.22);
+}
+
+.dark {
+  /* Basalt tinted green rather than neutral slate — the site keeps its identity
+     at night instead of turning into a generic dark dashboard. */
+  --bg: #0a1310;
+  --bg-subtle: #0e1a15;
+  --surface: #111e18;
+  --surface-2: #16261f;
+  --surface-hover: #1b2e25;
+  --border: #1f342b;
+  --border-strong: #2c4739;
+
+  --ink: #e8ebe8;
+  --muted: #9aa8a0;
+  --faint: #6f8177;
+
+  --brand: #05261b;
+  --brand-deep: #041c14;
+  --brand-ink: #d9f2e6;
+  --brand-soft: #0d3327;
+
+  --primary: #2dd4bf;
+  --primary-hover: #5eead4;
+  --primary-ink: #04211c;
+  --primary-soft: #10332e;
+
+  --accent: #e3b341;
+  --accent-soft: #33280d;
+
+  --danger: #f87171;
+  --danger-soft: #341717;
+  --warn: #e3b341;
+  --warn-soft: #33280d;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 32px -8px rgb(0 0 0 / 0.6);
+}
+
+/* `inline` makes Tailwind emit var() references, so utilities follow the theme
+   at runtime instead of baking in the light value at build time. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+
+  --shadow-card: var(--shadow);
+  --shadow-float: var(--shadow-lg);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+html.dark { color-scheme: dark; }
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------- transitions */
+
+/*
+ * Route changes.
+ *
+ * Browsers with the View Transitions API get a real cross-fade between the old
+ * and new page, driven by React Router's `viewTransition` prop. Everywhere else
+ * falls back to the keyframe below, applied to the routed content on each
+ * navigation, so the experience degrades to "still animated" rather than "snaps".
+ */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.page-enter {
+  animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-old(root) {
+  animation: vt-fade-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-fade-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* Navigation should feel continuous across pages, not re-fade each time. */
+.sidebar { view-transition-name: sidebar; }
+::view-transition-old(sidebar),
+::view-transition-new(sidebar) { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+}
+
+/*
+ * Display mode.
+ *
+ * When the rail is beside the imagery it already carries the conditions, the
+ * advisories and the forecast, so the copies inside the page are duplicates
+ * competing for the height the figures want. They are hidden only at the width
+ * where the rail actually appears — below that there is no rail, and hiding them
+ * would leave the display with no readings at all.
+ */
+@media (min-width: 80rem) {
+  html[data-display='on'] .not-in-display {
+    display: none;
+  }
+}
+
+/*
+ * Type sized for a wall, not a desk.
+ *
+ * A display is read from across a room, and every size in the interface is on
+ * the rem scale, so moving the root moves the whole thing together — text,
+ * spacing and the rail's own width — instead of leaving a patchwork of one
+ * enlarged panel beside unchanged controls. The imagery keeps whatever height is
+ * left, which is the right thing to give up: a figure loses a little box and the
+ * words become readable.
+ */
+@media (min-width: 80rem) {
+  html[data-display='on'] {
+    font-size: 20px;
+  }
+}
+
+/* Display mode, controls stood down. Only the imagery and its reading matter. */
+html[data-bare='on'] .bare-hide {
+  display: none;
+}
