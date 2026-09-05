@@ -13,8 +13,8 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
       src={`${import.meta.env.BASE_URL}logo.svg`}
       alt=""
       aria-hidden="true"
-      width={compact ? 28 : 52}
-      height={compact ? 28 : 52}
+      width={compact ? 30 : 64}
+      height={compact ? 30 : 64}
       className="shrink-0"
     />
   )
