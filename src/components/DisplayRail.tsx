@@ -50,21 +50,29 @@ function Conditions() {
         </span>
       </div>
 
-      <p className="mt-1 flex items-baseline gap-2">
-        <span className="text-5xl font-semibold tabular-nums tracking-tight text-ink">
+      {/* The temperature is the headline and the rest sits beside it rather than
+          under it: stacked, the readings pushed the advisories and the
+          discussion down the rail while a hand's width of the panel next to a
+          two-digit number stayed empty. */}
+      <div className="mt-1 flex items-center gap-4">
+        <span className="shrink-0 text-5xl font-semibold leading-none tabular-nums tracking-tight text-ink">
           {fmt(readTemp(data.temperature, 'F'))}°
         </span>
-        <span className="min-w-0 truncate text-base text-muted">{data.textDescription ?? '—'}</span>
-      </p>
+        <dl className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-1.5">
+          {rows.map(([k, v]) => (
+            <div key={k} className="min-w-0">
+              <dt className="text-[10px] font-semibold uppercase leading-tight tracking-widest text-faint">
+                {k}
+              </dt>
+              <dd className="truncate text-sm font-medium tabular-nums text-ink">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
-      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex items-baseline justify-between gap-2">
-            <dt className="text-xs font-semibold uppercase tracking-widest text-faint">{k}</dt>
-            <dd className="text-base font-medium tabular-nums text-ink">{v}</dd>
-          </div>
-        ))}
-      </dl>
+      {data.textDescription && (
+        <p className="mt-1.5 truncate text-sm text-muted">{data.textDescription}</p>
+      )}
     </section>
   )
 }

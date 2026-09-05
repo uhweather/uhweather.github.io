@@ -52,3 +52,26 @@ export function useFullscreen() {
 
   return { active, toggle, bare, setBare }
 }
+
+/**
+ * Whether the display is running unattended, for content that has to behave
+ * differently when nobody is there to drive it.
+ *
+ * Read off the root attribute rather than passed down: the pages that care are
+ * routed children, and threading a provider through the tree to tell them
+ * something the document already says would be the long way round.
+ */
+export function useDisplayMode(): boolean {
+  const [on, setOn] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.dataset.display === 'on',
+  )
+  useEffect(() => {
+    const el = document.documentElement
+    const read = () => setOn(el.dataset.display === 'on')
+    const observer = new MutationObserver(read)
+    observer.observe(el, { attributes: true, attributeFilter: ['data-display'] })
+    read()
+    return () => observer.disconnect()
+  }, [])
+  return on
+}

@@ -9,17 +9,20 @@ import { useEffect, useRef, useState } from 'react'
  * being read. This advances one block at a time and then sits still, which is
  * the difference between a ticker and a slideshow.
  *
- * The dwell scales with how much text the block holds, so a one-line note does
- * not sit as long as a nine-item key.
+ * The dwell is the block's own length at reading pace, floored so that a short
+ * note still gets long enough to be noticed and read. Length is what moves it:
+ * the floor only ever raises the time, never trims a long block down to fit.
  */
 export function useStepScroll(
   count: number,
   resetKey: unknown,
-  { baseMs = 6000, msPerCharacter = 22, lengths = [] as number[] } = {},
+  { minMs = 7000, msPerCharacter = 48, lengths = [] as number[] } = {},
 ) {
   const ref = useRef<HTMLDivElement>(null)
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+
+  const dwell = Math.max(minMs, (lengths[index] ?? 0) * msPerCharacter)
 
   useEffect(() => {
     setIndex(0)
@@ -29,18 +32,43 @@ export function useStepScroll(
 
   useEffect(() => {
     if (paused || count < 2) return
-    const dwell = baseMs + (lengths[index] ?? 0) * msPerCharacter
     const id = window.setTimeout(() => setIndex((i) => (i + 1) % count), dwell)
     return () => window.clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, paused, count, baseMs, msPerCharacter, lengths.join(',')])
+  }, [index, paused, count, dwell])
 
+  /**
+   * Put the block at the top of the window, and where it is taller than the
+   * window, creep through the rest of it before moving on.
+   *
+   * Dwelling longer on a block whose second half is below the fold buys nothing
+   * — the extra seconds are spent on lines nobody can see. The step changes the
+   * subject; this finishes the sentence.
+   */
   useEffect(() => {
     const el = ref.current
     const target = el?.children[0]?.children[index] as HTMLElement | undefined
     if (!el || !target) return
-    el.scrollTo({ top: target.offsetTop - el.offsetTop, behavior: 'smooth' })
-  }, [index])
+
+    const top = target.offsetTop - el.offsetTop
+    const overflow = Math.max(0, target.offsetHeight - el.clientHeight)
+    el.scrollTo({ top, behavior: 'smooth' })
+    if (!overflow || paused) return
+
+    // Still at each end: arriving and leaving are both worth a beat.
+    const hold = Math.min(1500, dwell * 0.15)
+    const travel = Math.max(1, dwell - hold * 2)
+    const start = performance.now()
+    let frame = 0
+    const tick = (now: number) => {
+      const t = (now - start - hold) / travel
+      // Left alone until the hold is up, so the smooth scroll into place is not
+      // fought frame by frame.
+      if (t >= 0) el.scrollTop = top + overflow * Math.min(1, t)
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [index, paused, dwell])
 
   return { ref, index, paused, setPaused }
 }
