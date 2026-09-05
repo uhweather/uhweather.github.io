@@ -729,15 +729,21 @@ export const ANALYSIS_GROUPS: AnalysisGroup[] = [
 
 /* ----------------------------------------------------------- tropical */
 
-const XGTWO = 'https://www.nhc.noaa.gov/xgtwo'
+/**
+ * Basins the outlook covers.
+ *
+ * The graphical outlook is not here: `www.nhc.noaa.gov` returns 403 to a browser
+ * request for its images while serving the same URL fine to a command-line
+ * client, so those graphics cannot be embedded. The outlook text comes from
+ * api.weather.gov and carries the substance — the areas being watched and the
+ * formation chances given to each.
+ */
+export const TROPICAL_BASINS = [
+  { id: 'CP', label: 'Central Pacific', blurb: 'Between 140°W and the dateline — the basin Hawai‘i sits in.' },
+  { id: 'EP', label: 'Eastern Pacific', blurb: 'East of 140°W, where systems that reach Hawai‘i usually form.' },
+] as const
 
 export const TROPICAL = {
-  outlooks: [
-    { id: 'cpac-2', basin: 'Central Pacific', range: '2-day', url: `${XGTWO}/two_cpac_2d0.png` },
-    { id: 'cpac-7', basin: 'Central Pacific', range: '7-day', url: `${XGTWO}/two_cpac_7d0.png` },
-    { id: 'epac-2', basin: 'Eastern Pacific', range: '2-day', url: `${XGTWO}/two_pac_2d0.png` },
-    { id: 'epac-7', basin: 'Eastern Pacific', range: '7-day', url: `${XGTWO}/two_pac_7d0.png` },
-  ],
   cphcSite: 'https://www.nhc.noaa.gov/?cpac',
   nhcSite: 'https://www.nhc.noaa.gov/',
 }
