@@ -7,36 +7,44 @@ import { compass, fmt, readSpeed, readTemp, relativeAge } from '../lib/units'
 import { NAV_ITEMS } from './nav-items'
 import AlertsPanel from './AlertsPanel'
 
-function Wordmark() {
+function Wordmark({ compact = false }: { compact?: boolean }) {
+  const logo = (
+    <img
+      src={`${import.meta.env.BASE_URL}logo.svg`}
+      alt=""
+      aria-hidden="true"
+      width={compact ? 28 : 52}
+      height={compact ? 28 : 52}
+      className="shrink-0"
+    />
+  )
+
+  if (compact) {
+    return (
+      <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
+        {logo}
+        <span className="min-w-0 truncate text-base font-semibold tracking-tight text-ink">
+          Weather Glass
+        </span>
+      </Link>
+    )
+  }
+
   return (
-    <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
-      <svg
-        aria-hidden="true"
-        width="26"
-        height="26"
-        viewBox="0 0 24 24"
-        className="mt-0.5 shrink-0 text-primary"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      >
-        <circle cx="12" cy="12" r="8.6" />
-        <path d="M12 12 16.2 7.8" />
-        <path d="M12 3.4v1.6M12 19v1.6M3.4 12H5M19 12h1.6" />
-        <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
-      </svg>
-      <span className="min-w-0">
-        {/* Two lines: the rail is narrow and the name is the one thing on it that
-            should be readable at a glance. */}
-        <span className="block text-xl font-semibold leading-[1.1] tracking-tight text-ink">
+    <Link to="/" viewTransition className="block min-w-0">
+      {/* Mark and name side by side, the byline under both: the rail is narrow,
+          and stacking the name against the mark keeps the type large enough to
+          read at a glance without the byline squeezing it. */}
+      <span className="flex items-center gap-3">
+        {logo}
+        <span className="text-xl font-semibold leading-[1.05] tracking-tight text-ink">
           Weather
           <br />
           Glass
         </span>
-        <span className="mt-1 block text-[11px] leading-snug text-muted">
-          A passion project by ATMO students @ UH Mānoa
-        </span>
+      </span>
+      <span className="mt-2 block text-[11px] leading-snug text-muted">
+        A passion project by ATMO students @ UH Mānoa
       </span>
     </Link>
   )
@@ -186,7 +194,7 @@ export default function Sidebar({
       {/* Mobile bar */}
       <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
-          <Wordmark />
+          <Wordmark compact />
           <div className="ml-auto flex items-center gap-1">
             <button type="button" onClick={onOpenAlerts} aria-label="Weather alerts" className={iconBtn}>
               <span aria-hidden="true">🔔</span>

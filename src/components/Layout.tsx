@@ -109,8 +109,7 @@ export default function Layout() {
               <a className="text-primary hover:underline" href="https://www.weather.gov/hfo/">
                 consult NWS Honolulu
               </a>{' '}
-              for official warnings. An independent student project — not an official University
-              of Hawai‘i or NOAA publication.
+              for official warnings.
             </p>
             <Link className="shrink-0 text-primary hover:underline" to="/about" viewTransition>
               About &amp; sources →

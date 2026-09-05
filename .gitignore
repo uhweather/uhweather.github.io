@@ -8,3 +8,6 @@ dist
 PROGRESS.md
 CLAUDE.md
 .claude/
+
+# Logo source files (.ai/.psd) — the exported SVG in public/ is what ships.
+/logo/
