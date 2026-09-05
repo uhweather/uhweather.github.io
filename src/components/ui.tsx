@@ -48,6 +48,7 @@ export function SegmentedControl<T extends string>({
   options,
   label,
   name,
+  className = '',
 }: {
   value: T
   onChange: (v: T) => void
@@ -55,11 +56,16 @@ export function SegmentedControl<T extends string>({
   label: string
   /** Optional caption shown before the options. */
   name?: string
+  className?: string
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+    <div
+      role="group"
+      aria-label={label}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-1 ${className}`}
+    >
       {name && (
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-faint">
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-faint">
           {name}
         </span>
       )}
@@ -72,7 +78,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.id)}
             aria-pressed={active}
             title={o.title}
-            className={`relative py-1 text-sm transition-colors ${
+            className={`relative shrink-0 py-1 text-sm transition-colors ${
               active ? 'font-medium text-ink' : 'text-muted hover:text-ink'
             }`}
           >

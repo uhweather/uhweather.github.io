@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   animSizeFor,
   bandSpec,
@@ -134,7 +134,10 @@ export default function Satellite() {
   return (
     /* Fills whatever height the layout has left, so the imagery is the page
        rather than a tile inside it. */
-    <div className="flex min-h-[520px] flex-1 flex-col gap-3">
+    <div
+      className="flex flex-1 flex-col gap-3 lg:min-h-[520px]"
+      style={{ '--sat-aspect': String(spec.aspect) } as CSSProperties}
+    >
       <h1 className="sr-only">
         {spec.label} — {combine ? 'four channels' : meta.label} satellite imagery
       </h1>
@@ -142,8 +145,9 @@ export default function Satellite() {
       {/* One row, one click per change, everything visible at once. The legacy
           site's index was a channel × view matrix you could read at a glance;
           two dropdowns replaced that with a scan and twice the clicks. */}
-      <header className="bare-hide flex flex-wrap items-center gap-x-6 gap-y-2">
+      <header className="bare-hide flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-2">
         <SegmentedControl
+          className="rail"
           label="View"
           name="View"
           value={sector}
@@ -152,6 +156,7 @@ export default function Satellite() {
         />
         {!combine && (
           <SegmentedControl
+            className="rail"
             label="Channel"
             name="Channel"
             value={band}
@@ -168,7 +173,7 @@ export default function Satellite() {
             {meta.short}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-6">
+        <div className="rail flex items-center gap-5 lg:ml-auto lg:gap-6">
           <button
             type="button"
             onClick={() => setBrowsing(true)}
@@ -210,10 +215,11 @@ export default function Satellite() {
         onClose={() => setBrowsing(false)}
       />
 
-      {/* The image is constrained against this box, which has a definite height
-          from flex-1. `overflow-hidden` is load-bearing: without it a wide
-          sector spills out and covers the controls. */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      {/* The image is constrained against this box. Its height comes from the
+          figure's own ratio on a phone and from `flex-1` once the page fills the
+          window; `overflow-hidden` is load-bearing either way, since without it
+          a wide sector spills out and covers the controls. */}
+      <div className="sat-stage relative w-full overflow-hidden lg:min-h-0 lg:flex-1">
         {active.isError ? (
           <div className="absolute inset-0 grid place-items-center">
             <ErrorState
@@ -344,42 +350,46 @@ export default function Satellite() {
             </span>
           </label>
 
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            Frames
-            <select className={selectClass} value={frames} onChange={(e) => setFrames(Number(e.target.value))}>
-              {FRAME_COUNTS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            Skip
-            <select className={selectClass} value={step} onChange={(e) => setStep(Number(e.target.value))}>
-              {STEPS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            Speed
-            <select className={selectClass} value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
-              {SPEEDS.map((s) => <option key={s.ms} value={s.ms}>{s.label}</option>)}
-            </select>
-          </label>
-          <label
-            className="flex items-center gap-1.5 text-xs text-muted"
-            title={`Frame resolution: ${animSizeFor(sector, quality)}`}
-          >
-            Size
-            <select
-              className={selectClass}
-              value={quality}
-              onChange={(e) => setQuality(e.target.value as SatQuality)}
+          {/* `lg:contents` dissolves this wrapper where the row has the width for
+              everything on one line, leaving the desktop layout untouched. */}
+          <div className="rail flex items-center gap-x-4 lg:contents">
+            <label className="flex items-center gap-1.5 text-xs text-muted">
+              Frames
+              <select className={selectClass} value={frames} onChange={(e) => setFrames(Number(e.target.value))}>
+                {FRAME_COUNTS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-muted">
+              Skip
+              <select className={selectClass} value={step} onChange={(e) => setStep(Number(e.target.value))}>
+                {STEPS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-muted">
+              Speed
+              <select className={selectClass} value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+                {SPEEDS.map((s) => <option key={s.ms} value={s.ms}>{s.label}</option>)}
+              </select>
+            </label>
+            <label
+              className="flex items-center gap-1.5 text-xs text-muted"
+              title={`Frame resolution: ${animSizeFor(sector, quality)}`}
             >
-              <option value="small">Small</option>
-              <option value="large">Large</option>
-            </select>
-          </label>
+              Size
+              <select
+                className={selectClass}
+                value={quality}
+                onChange={(e) => setQuality(e.target.value as SatQuality)}
+              >
+                <option value="small">Small</option>
+                <option value="large">Large</option>
+              </select>
+            </label>
 
-          <span className="text-xs text-faint" title="What this loop downloads">
-            {humanBytes(weight)}
-          </span>
+            <span className="text-xs text-faint" title="What this loop downloads">
+              {humanBytes(weight)}
+            </span>
+          </div>
         </div>
       ) : (
         <div className="border-t border-line pt-3 text-xs text-muted">

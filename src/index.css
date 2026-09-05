@@ -226,3 +226,33 @@ body {
 html[data-bare='on'] .bare-hide {
   display: none;
 }
+
+/*
+ * Control rails.
+ *
+ * Below the rail's breakpoint a row of options is wider than the screen, and
+ * letting it wrap turns three tidy groups into a ragged block with the last
+ * option cut off at the edge. It scrolls sideways as one line instead, with the
+ * clipped option at the edge saying there is more.
+ */
+@media (max-width: 63.999rem) {
+  .rail {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail > * { flex: none; }
+}
+
+/*
+ * The satellite stage.
+ *
+ * A phone scrolls, so the figure is sized by the width it has rather than the
+ * height that is left over: pinning the stage to the imagery's own ratio spends
+ * the whole screen width on picture instead of leaving bars either side. From
+ * `lg` up the page fills the window and the stage takes the height it is given.
+ */
+.sat-stage { aspect-ratio: var(--sat-aspect); }
+@media (min-width: 64rem) { .sat-stage { aspect-ratio: auto; } }

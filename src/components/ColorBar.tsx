@@ -45,10 +45,13 @@ export default function ColorBar({
 
   return (
     <div
-      className={`flex shrink-0 flex-wrap items-start justify-center gap-x-8 gap-y-2 ${className}`}
+      /* `shrink-0` holds the strip's height where this sits in a column; the
+         width caps are what keep two scales from running off a phone screen
+         instead of wrapping onto their own lines. */
+      className={`flex max-w-full shrink-0 flex-wrap items-start justify-center gap-x-8 gap-y-2 ${className}`}
     >
       {groups.map((g) => (
-        <figure key={g.colorbar} className="flex min-w-0 flex-col items-center gap-1">
+        <figure key={g.colorbar} className="flex min-w-0 max-w-full flex-col items-center gap-1">
           <img
             src={g.colorbar}
             alt={`Colour scale for ${g.labels.join(', ')}: ${g.scale ?? 'see NESDIS'}`}

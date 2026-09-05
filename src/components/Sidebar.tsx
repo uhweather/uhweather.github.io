@@ -7,46 +7,42 @@ import { compass, fmt, readSpeed, readTemp, relativeAge } from '../lib/units'
 import { NAV_ITEMS } from './nav-items'
 import AlertsPanel from './AlertsPanel'
 
+/**
+ * Mark and name as two columns, the byline under both.
+ *
+ * The same shape in the rail and on the phone bar: the name reads at a glance in
+ * either place, and the byline spans the full width beneath rather than being
+ * squeezed into the column the name sits in.
+ */
 function Wordmark({ compact = false }: { compact?: boolean }) {
-  const logo = (
-    <img
-      src={`${import.meta.env.BASE_URL}logo.svg`}
-      alt=""
-      aria-hidden="true"
-      width={compact ? 30 : 64}
-      height={compact ? 30 : 64}
-      className="shrink-0"
-    />
-  )
-
-  if (compact) {
-    return (
-      <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
-        {logo}
-        <span className="min-w-0 truncate text-base font-semibold tracking-tight text-ink">
-          Weather Glass
-        </span>
-      </Link>
-    )
-  }
-
   return (
-    <Link to="/" viewTransition className="block min-w-0">
-      {/* Mark and name side by side, the byline under both: the rail is narrow,
-          and stacking the name against the mark keeps the type large enough to
-          read at a glance without the byline squeezing it. */}
-      <span className="flex items-center gap-3">
-        {logo}
-        <span className="text-[30px] font-semibold leading-[1.02] tracking-tight text-ink">
-          Weather
-          <br />
-          Glass
-        </span>
-      </span>
-      <span className="mt-2 block text-[11px] leading-snug text-muted">
-        A passion project by ATMO students @ UH Mānoa
+    <Link to="/" viewTransition className="flex min-w-0 items-center gap-3">
+      <img
+        src={`${import.meta.env.BASE_URL}logo.svg`}
+        alt=""
+        aria-hidden="true"
+        width={compact ? 46 : 64}
+        height={compact ? 46 : 64}
+        className="shrink-0"
+      />
+      <span
+        className={`font-semibold leading-[1.02] tracking-tight text-ink ${
+          compact ? 'text-[22px]' : 'text-[30px]'
+        }`}
+      >
+        Weather
+        <br />
+        Glass
       </span>
     </Link>
+  )
+}
+
+function Byline({ className = '' }: { className?: string }) {
+  return (
+    <p className={`text-[11px] leading-snug text-muted ${className}`}>
+      A passion project by ATMO students @ UH Mānoa
+    </p>
   )
 }
 
@@ -149,7 +145,10 @@ export default function Sidebar({
     <>
       {/* Desktop rail */}
       <aside className="sidebar sticky top-0 hidden h-dvh w-56 shrink-0 flex-col gap-5 border-r border-line bg-surface px-4 py-5 lg:flex">
-        <Wordmark />
+        <div className="shrink-0">
+          <Wordmark />
+          <Byline className="mt-2" />
+        </div>
 
         <nav aria-label="Primary" className="shrink-0">
           <NavList />
@@ -193,38 +192,41 @@ export default function Sidebar({
 
       {/* Mobile bar */}
       <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur-md lg:hidden">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Wordmark compact />
-          <div className="ml-auto flex items-center gap-1">
-            <button type="button" onClick={onOpenAlerts} aria-label="Weather alerts" className={iconBtn}>
-              <span aria-hidden="true">🔔</span>
-            </button>
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
-              className={iconBtn}
-            >
-              <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              aria-label={fullscreen ? 'Exit display mode' : 'Enter display mode'}
-              className={iconBtn}
-            >
-              <span aria-hidden="true">{fullscreen ? '⤡' : '⤢'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-expanded={open}
-              aria-label="Toggle navigation"
-              className={iconBtn}
-            >
-              <span aria-hidden="true">{open ? '✕' : '☰'}</span>
-            </button>
+        <div className="px-4 py-2.5">
+          <div className="flex items-center gap-3">
+            <Wordmark compact />
+            <div className="ml-auto flex items-center gap-1">
+              <button type="button" onClick={onOpenAlerts} aria-label="Weather alerts" className={iconBtn}>
+                <span aria-hidden="true">🔔</span>
+              </button>
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+                className={iconBtn}
+              >
+                <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onToggleFullscreen}
+                aria-label={fullscreen ? 'Exit display mode' : 'Enter display mode'}
+                className={iconBtn}
+              >
+                <span aria-hidden="true">{fullscreen ? '⤡' : '⤢'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                aria-label="Toggle navigation"
+                className={iconBtn}
+              >
+                <span aria-hidden="true">{open ? '✕' : '☰'}</span>
+              </button>
+            </div>
           </div>
+          <Byline className="mt-1.5" />
         </div>
         <nav
           aria-label="Primary"

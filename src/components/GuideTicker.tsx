@@ -50,11 +50,13 @@ export default function GuideTicker({
   return (
     <section
       aria-label="How to read these products"
-      className={`flex shrink-0 items-start gap-4 ${className}`}
+      className={`flex shrink-0 flex-col gap-1 sm:flex-row sm:items-start sm:gap-4 ${className}`}
     >
-      <h2 className="w-28 shrink-0 pt-0.5 text-xs font-semibold uppercase leading-tight tracking-widest text-faint">
+      {/* A narrow screen has no width to give a label column, so the heading
+          takes a line of its own with the counter beside it. */}
+      <h2 className="flex shrink-0 items-baseline gap-2 pt-0.5 text-xs font-semibold uppercase leading-tight tracking-widest text-faint sm:block sm:w-28">
         How to read these
-        <span className="mt-0.5 block font-normal normal-case tracking-normal text-faint/70">
+        <span className="font-normal normal-case tracking-normal text-faint/70 sm:mt-0.5 sm:block">
           {scroll.paused ? 'held' : `${scroll.index + 1} of ${specs.length}`}
         </span>
       </h2>
@@ -63,7 +65,9 @@ export default function GuideTicker({
         ref={scroll.ref}
         onMouseEnter={() => scroll.setPaused(true)}
         onMouseLeave={() => scroll.setPaused(false)}
-        className="h-16 min-w-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        /* `flex-1` only once the section is a row: in the stacked layout it
+           would read as "grow" and the strip would eat the page. */
+        className="h-16 w-full min-w-0 overflow-y-auto [scrollbar-width:none] sm:flex-1 [&::-webkit-scrollbar]:hidden"
       >
         <div className="space-y-2 pb-8">
           {specs.map((b) => (
