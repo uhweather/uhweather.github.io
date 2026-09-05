@@ -5,6 +5,10 @@
  * shows whatever its one HTML file says — every route the same. The build reads
  * this list and writes a real HTML file per route with its own title,
  * description and card, which is also what a direct hit on /satellite loads.
+ *
+ * The description is the only place the sentence about a page lives. The card
+ * image beside it carries the site's identity and the page's name and nothing
+ * else — a card that repeats its own caption reads as a duplicate of itself.
  */
 export interface PageMeta {
   path: string
@@ -20,7 +24,7 @@ export const PAGES: PageMeta[] = [
     path: '/',
     title: 'Weather Glass — UH Mānoa',
     description:
-      'Live Hawai‘i conditions, GOES-West imagery, forecasts and tropical systems. A passion project by ATMO students @ UH Mānoa.',
+      'Live Hawai‘i conditions, GOES-West satellite imagery, forecasts and tropical systems.',
   },
   {
     path: '/observations',

@@ -25,8 +25,12 @@ function meta(html: string, key: string, value: string): string {
   return html.replace(re, `$1${escape(value)}$2`)
 }
 
+/** public/og/<slug>.jpg, made by scripts/make-cards.mjs. */
+const cardSlug = (path: string) => (path === '/' ? 'home' : path.slice(1).replaceAll('/', '-'))
+
 function forPage(shell: string, page: PageMeta, root: string): string {
   const url = page.path === '/' ? root : `${root}${page.path.slice(1)}/`
+  const card = `${root}og/${cardSlug(page.path)}.jpg`
   let html = shell.replace(/<title>[^<]*<\/title>/, `<title>${escape(page.title)}</title>`)
   html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${escape(url)}$2`)
   for (const [key, value] of [
@@ -34,8 +38,12 @@ function forPage(shell: string, page: PageMeta, root: string): string {
     ['og:title', page.title],
     ['og:description', page.description],
     ['og:url', url],
+    ['og:image', card],
+    // Describes the picture, not the page — og:title already names the page.
+    ['og:image:alt', 'Weather Glass over a GOES-West Sandwich composite of the Northeast Pacific'],
     ['twitter:title', page.title],
     ['twitter:description', page.description],
+    ['twitter:image', card],
   ] as [string, string][]) {
     html = meta(html, key, value)
   }
