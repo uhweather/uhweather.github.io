@@ -237,8 +237,17 @@ html[data-bare='on'] .bare-hide {
  */
 @media (max-width: 63.999rem) {
   .rail {
+    /* The scroller has to be the flex line itself: as a block it would just
+       hand its full width to a wrapping child, which then wraps anyway. */
+    display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
+    /* `overflow-x: auto` alone makes the other axis scrollable too, and the
+       2px an active option's underline hangs below its box is enough for a
+       thumb to catch. Sideways is the only direction with anything in it, so
+       the underline gets padding to sit in and the axis is shut. */
+    overflow-y: hidden;
+    padding-bottom: 2px;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
   }

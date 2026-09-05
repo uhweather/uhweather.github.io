@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { nws } from '../lib/nws'
@@ -18,6 +19,7 @@ import { SegmentedControl } from '../components/ui'
 import ColorBar from '../components/ColorBar'
 import GuideTicker from '../components/GuideTicker'
 import PanelChannel from '../components/PanelChannel'
+import FigureViewer from '../components/FigureViewer'
 import { ErrorState, Skeleton } from '../components/ui'
 
 /**
@@ -151,6 +153,9 @@ export default function Home() {
   // refresh button, and it keeps running in a background tab.
   const generation = useNow(spec.cadenceMinutes)
 
+  // Which panel is open full screen, and the rectangle it grew out of.
+  const [focus, setFocus] = useState<{ panel: number; origin: DOMRect } | null>(null)
+
   return (
     <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
       <ConditionsStrip className="not-in-display" />
@@ -189,6 +194,14 @@ export default function Home() {
                   alt={`Latest ${bandSpec(b).label} imagery of the ${spec.label} sector`}
                   className="absolute inset-0 h-full w-full object-contain"
                 />
+                <button
+                  type="button"
+                  onClick={(e) =>
+                    setFocus({ panel: i, origin: e.currentTarget.getBoundingClientRect() })
+                  }
+                  aria-label={`Enlarge ${bandSpec(b).label}`}
+                  className="absolute inset-0 z-[1] cursor-zoom-in"
+                />
                 <PanelChannel value={b} onChange={(next) => setPanel(i, next)} />
               </div>
             ))}
@@ -201,6 +214,16 @@ export default function Home() {
       <GuideTicker bands={panels} className="border-t border-line pt-2.5" />
 
       <ForecastStrip className="not-in-display" />
+
+      {focus && (
+        <FigureViewer
+          src={`${satellitePanelUrl(sector, panels[focus.panel])}?_=${generation}`}
+          alt={`Latest ${bandSpec(panels[focus.panel]).label} imagery of the ${spec.label} sector`}
+          caption={`${bandSpec(panels[focus.panel]).label} · ${spec.label}`}
+          origin={focus.origin}
+          onClose={() => setFocus(null)}
+        />
+      )}
     </div>
   )
 }

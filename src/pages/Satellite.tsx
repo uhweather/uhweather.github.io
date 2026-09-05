@@ -24,6 +24,8 @@ import SatelliteMatrix from '../components/SatelliteMatrix'
 import ColorBar from '../components/ColorBar'
 import GuideTicker from '../components/GuideTicker'
 import PanelChannel from '../components/PanelChannel'
+import FigureViewer from '../components/FigureViewer'
+import Rail from '../components/Rail'
 import { hstDateTime } from '../lib/units'
 
 const SPEEDS = [
@@ -59,6 +61,12 @@ export default function Satellite() {
   // 2x2 of four channels, driven by one transport. Persisted with the sector and
   // the panel channels: they are one setting, and a display should come back to it.
   const [combine, setCombine] = useSharedCombine()
+  // Which figure is open full screen, and the rectangle it grew out of. `null`
+  // for the panel means the single view.
+  const [focus, setFocus] = useState<{ panel: number | null; origin: DOMRect } | null>(null)
+
+  const enlarge = (panel: number | null) => (e: React.MouseEvent<HTMLElement>) =>
+    setFocus({ panel, origin: e.currentTarget.getBoundingClientRect() })
 
   const spec = sectorSpec(sector)
   const meta = bandSpec(band)
@@ -146,34 +154,36 @@ export default function Satellite() {
           site's index was a channel × view matrix you could read at a glance;
           two dropdowns replaced that with a scan and twice the clicks. */}
       <header className="bare-hide flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-2">
-        <SegmentedControl
-          className="rail"
-          label="View"
-          name="View"
-          value={sector}
-          onChange={(v) => setSector(v as SatSector)}
-          options={SAT_SECTORS.map((s) => ({ id: s.id, label: s.short, title: s.blurb }))}
-        />
-        {!combine && (
+        <Rail>
           <SegmentedControl
-            className="rail"
-            label="Channel"
-            name="Channel"
-            value={band}
-            onChange={(v) => setBand(v as SatBand)}
-            options={FEATURED_BANDS.map((b, i) => ({
-              id: b.id,
-              label: b.short,
-              title: `${b.descriptor} (${i + 1})`,
-            }))}
+            label="View"
+            name="View"
+            value={sector}
+            onChange={(v) => setSector(v as SatSector)}
+            options={SAT_SECTORS.map((s) => ({ id: s.id, label: s.short, title: s.blurb }))}
           />
+        </Rail>
+        {!combine && (
+          <Rail>
+            <SegmentedControl
+              label="Channel"
+              name="Channel"
+              value={band}
+              onChange={(v) => setBand(v as SatBand)}
+              options={FEATURED_BANDS.map((b, i) => ({
+                id: b.id,
+                label: b.short,
+                title: `${b.descriptor} (${i + 1})`,
+              }))}
+            />
+          </Rail>
         )}
         {!combine && !FEATURED_BANDS.some((b) => b.id === band) && (
           <span className="text-sm font-medium text-ink" title={meta.descriptor}>
             {meta.short}
           </span>
         )}
-        <div className="rail flex items-center gap-5 lg:ml-auto lg:gap-6">
+        <Rail className="lg:ml-auto" row="flex items-center gap-5 lg:gap-6">
           <button
             type="button"
             onClick={() => setBrowsing(true)}
@@ -200,7 +210,7 @@ export default function Satellite() {
               { id: 'still', label: 'Latest' },
             ]}
           />
-        </div>
+        </Rail>
       </header>
 
       <SatelliteMatrix
@@ -267,6 +277,12 @@ export default function Satellite() {
                   alt={`${bandSpec(b).label} over ${spec.label}`}
                   className="absolute inset-0 h-full w-full object-contain"
                 />
+                <button
+                  type="button"
+                  onClick={enlarge(i)}
+                  aria-label={`Enlarge ${bandSpec(b).label}`}
+                  className="absolute inset-0 z-[1] cursor-zoom-in"
+                />
                 <PanelChannel value={b} onChange={(next) => setPanel(i, next)} />
               </div>
             ))}
@@ -286,6 +302,12 @@ export default function Satellite() {
                     : `Latest ${meta.label} imagery of the ${spec.label} sector`
                 }
                 className="absolute inset-0 h-full w-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={enlarge(null)}
+                aria-label={`Enlarge ${meta.label}`}
+                className="absolute inset-0 cursor-zoom-in"
               />
             </div>
           </div>
@@ -404,6 +426,22 @@ export default function Satellite() {
       )}
 
       <GuideTicker bands={shown} className="border-t border-line pt-2.5" />
+
+      {focus && (
+        <FigureViewer
+          src={
+            focus.panel === null
+              ? (animate ? (loop.current ?? stillUrl) : stillUrl)
+              : (grid.urls?.[focus.panel] ?? '')
+          }
+          alt={`${bandSpec(focus.panel === null ? band : panels[focus.panel]).label} over ${spec.label}`}
+          caption={`${bandSpec(focus.panel === null ? band : panels[focus.panel]).label} · ${spec.label}${
+            active.stamp ? ` · ${hstDateTime(active.stamp.toISOString())} HST` : ''
+          }`}
+          origin={focus.origin}
+          onClose={() => setFocus(null)}
+        />
+      )}
     </div>
   )
 }
