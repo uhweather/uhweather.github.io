@@ -12,7 +12,7 @@ import {
 } from '../lib/units'
 import { useAlerts } from './AlertsDrawer'
 import { useAutoScroll } from '../lib/useAutoScroll'
-import { parseAfd } from '../lib/product'
+import { parseAfd, synopsis } from '../lib/product'
 
 function Conditions() {
   const station = STATIONS_BY_ID.get(PRIMARY_STATION)!
@@ -163,8 +163,7 @@ export default function DisplayRail({
   // screen for five seconds should get that one, so it is pinned and the rest
   // moves past it. Falls back to the first section on the rare product that has
   // no synopsis heading.
-  const pinned =
-    sections.find((s) => s.heading.includes('SYNOPSIS')) ?? sections[0] ?? null
+  const pinned = synopsis(sections)
   const rest = sections.filter((s) => s !== pinned)
 
   const scroll = useAutoScroll(rest.length > 0, data?.id ?? dataUpdatedAt)

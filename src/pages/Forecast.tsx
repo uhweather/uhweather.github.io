@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { nws, type ForecastPeriod } from '../lib/nws'
+import { useRef, useState } from 'react'
+import { nws, type ForecastPeriod, type TextProduct } from '../lib/nws'
 import { FORECAST_LOCATIONS } from '../lib/stations'
 import { hstDateTime, relativeAge } from '../lib/units'
-import { parseAfd } from '../lib/product'
+import { parseAfd, synopsis } from '../lib/product'
 import { ErrorState, SegmentedControl, Skeleton } from '../components/ui'
 import HourlyChart from '../components/HourlyChart'
 import Rail from '../components/Rail'
@@ -16,14 +16,126 @@ import Rail from '../components/Rail'
  * Codes verified against /products/locations/HFO/types.
  */
 const HFO_PRODUCTS = [
-  { code: 'AFD', label: 'Discussion', blurb: "The forecaster's own reasoning behind the forecast." },
-  { code: 'SRF', label: 'Surf', blurb: 'Surf heights by shore, and High Surf Advisories.' },
-  { code: 'ZFP', label: 'Zones', blurb: 'Plain-language forecast for each land zone.' },
-  { code: 'SFP', label: 'State', blurb: 'Statewide summary in narrative form.' },
-  { code: 'CWF', label: 'Coastal waters', blurb: 'Winds and seas for the nearshore marine zones.' },
-  { code: 'OFF', label: 'Offshore', blurb: 'Conditions for the open ocean around the islands.' },
-  { code: 'NPW', label: 'Advisories', blurb: 'Wind, heat and other non-rain hazards in effect.' },
+  // The tooltip carries the product's official name, not a gloss on it.
+  { code: 'AFD', label: 'Discussion', blurb: 'Area Forecast Discussion' },
+  { code: 'SRF', label: 'Surf', blurb: 'Surf Zone Forecast' },
+  { code: 'ZFP', label: 'Zones', blurb: 'Zone Forecast Product' },
+  { code: 'SFP', label: 'State', blurb: 'State Forecast' },
+  { code: 'CWF', label: 'Coastal waters', blurb: 'Coastal Waters Forecast' },
+  { code: 'OFF', label: 'Offshore', blurb: 'Offshore Forecast' },
+  { code: 'NPW', label: 'Advisories', blurb: 'Non-Precipitation Weather advisories' },
 ] as const
+
+
+const TIME = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'Pacific/Honolulu',
+})
+// Composed rather than asked for together: `{ weekday, day }` in en-US puts the
+// figure first ("4 Fri").
+const WEEKDAY = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  timeZone: 'Pacific/Honolulu',
+})
+const DATE = new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: 'Pacific/Honolulu' })
+const dayLabel = (at: Date) => `${WEEKDAY.format(at)} ${DATE.format(at)}`
+const DAY_KEY = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'Pacific/Honolulu',
+})
+
+/**
+ * Earlier issuances of a product.
+ *
+ * api.weather.gov keeps roughly the last week of each type — thirty discussions,
+ * four or five a day — and nothing before that, so this is a week of history
+ * rather than an archive. That is still the window in which "what did they say
+ * yesterday morning, before the models turned" is a question worth asking.
+ *
+ * The list is also what names the newest one, so reading an older issuance costs
+ * no request the page was not already making.
+ */
+function useIssuances(code: string) {
+  return useQuery({
+    queryKey: ['product-list', code, 'HFO'],
+    queryFn: () => nws.productList(code, 'HFO'),
+    staleTime: 15 * 60_000,
+    refetchInterval: 15 * 60_000,
+    refetchIntervalInBackground: true,
+  })
+}
+
+function useProduct(id: string | null) {
+  return useQuery({
+    queryKey: ['product-body', id],
+    queryFn: () => nws.product(id!),
+    enabled: !!id,
+    // A product never changes once issued; only the list of them grows.
+    staleTime: Infinity,
+  })
+}
+
+interface IssuedDay {
+  key: string
+  label: string
+  items: TextProduct[]
+}
+
+function groupByDay(products: TextProduct[]): IssuedDay[] {
+  const days: IssuedDay[] = []
+  const today = DAY_KEY.format(new Date())
+  for (const p of products) {
+    const at = new Date(p.issuanceTime)
+    const key = DAY_KEY.format(at)
+    let day = days.find((d) => d.key === key)
+    if (!day) {
+      day = { key, label: key === today ? 'Today' : dayLabel(at), items: [] }
+      days.push(day)
+    }
+    day.items.push(p)
+  }
+  return days
+}
+
+/**
+ * The latest synopsis, before anything else on the page.
+ *
+ * The discussion is the most valuable text here and it was at the bottom, behind
+ * a scroll. Its opening paragraph is the state of the atmosphere in a few
+ * sentences — the thing worth reading whether or not you go on to the aviation
+ * and fire-weather sections — so it leads, with a way down to the rest.
+ */
+function Synopsis({ onJump }: { onJump: () => void }) {
+  const issued = useIssuances('AFD')
+  const { data } = useProduct(issued.data?.[0]?.id ?? null)
+  const section = data?.productText ? synopsis(parseAfd(data.productText)) : null
+
+  if (!section) return <Skeleton className="h-24 w-full" />
+
+  return (
+    <section className="min-w-0 border-l-2 border-primary pl-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-faint">
+          {section.heading}
+        </h2>
+        <span className="text-xs text-faint">{relativeAge(data!.issuanceTime)}</span>
+        <button
+          type="button"
+          onClick={onJump}
+          className="ml-auto text-xs font-medium text-primary transition-colors hover:underline"
+        >
+          Full discussion ↓
+        </button>
+      </div>
+      <p className="mt-1.5 max-w-[80ch] whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
+        {section.body}
+      </p>
+    </section>
+  )
+}
 
 /**
  * The week as a table.
@@ -149,26 +261,24 @@ function DayDetail({ day }: { day: Day }) {
  */
 function Products() {
   const [code, setCode] = useState<string>('AFD')
+  const [chosen, setChosen] = useState<string | null>(null)
   const meta = HFO_PRODUCTS.find((p) => p.code === code)!
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['product', code, 'HFO'],
-    queryFn: () => nws.latestProduct(code, 'HFO'),
-    staleTime: 30 * 60_000,
-    refetchInterval: 30 * 60_000,
-    refetchIntervalInBackground: true,
-  })
+  const issued = useIssuances(code)
+  const id = chosen ?? issued.data?.[0]?.id ?? null
+  const { data, isLoading, isError, error, refetch } = useProduct(id)
+
+  const days = groupByDay(issued.data ?? [])
+  const day = days.find((d) => d.items.some((i) => i.id === id)) ?? days[0]
 
   const sections = data?.productText ? parseAfd(data.productText) : []
 
   return (
-    <section className="min-w-0">
+    <section id="text-products" className="min-w-0 scroll-mt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-line pb-2">
         <h2 className="text-sm font-medium text-ink">From NWS Honolulu</h2>
         {data && (
-          <p className="text-xs text-faint" title={`${hstDateTime(data.issuanceTime)} HST`}>
-            {meta.blurb} · issued {relativeAge(data.issuanceTime)}
-          </p>
+          <p className="text-xs text-faint">{hstDateTime(data.issuanceTime)} HST</p>
         )}
       </div>
 
@@ -176,10 +286,36 @@ function Products() {
         <SegmentedControl
           label="Text product"
           value={code}
-          onChange={setCode}
+          onChange={(v) => {
+            setCode(v)
+            setChosen(null)
+          }}
           options={HFO_PRODUCTS.map((p) => ({ id: p.code, label: p.label, title: p.blurb }))}
         />
       </Rail>
+
+      {days.length > 1 && (
+        <Rail className="mt-1.5" row="flex items-center gap-x-5">
+          <SegmentedControl
+            label="Day issued"
+            name="Issued"
+            value={day?.key ?? ''}
+            onChange={(k) => setChosen(days.find((d) => d.key === k)?.items[0].id ?? null)}
+            options={days.map((d) => ({ id: d.key, label: d.label }))}
+          />
+        </Rail>
+      )}
+
+      {day && day.items.length > 1 && (
+        <Rail className="mt-1" row="flex items-center gap-x-5">
+          <SegmentedControl
+            label="Time issued"
+            value={id ?? ''}
+            onChange={setChosen}
+            options={day.items.map((i) => ({ id: i.id, label: TIME.format(new Date(i.issuanceTime)) }))}
+          />
+        </Rail>
+      )}
 
       <div className="mt-3">
         {isLoading && <Skeleton className="h-64 w-full" />}
@@ -190,11 +326,8 @@ function Products() {
             onRetry={() => refetch()}
           />
         )}
-        {data === null && (
-          <p className="text-sm text-muted">
-            No current {meta.label.toLowerCase()} product — this one is issued only when
-            conditions warrant.
-          </p>
+        {issued.isSuccess && !issued.data.length && (
+          <p className="text-sm text-muted">No {meta.label.toLowerCase()} product in the archive.</p>
         )}
         {sections.map((s) => (
           <article key={s.heading} className="mb-5 max-w-[74ch] last:mb-0">
@@ -212,6 +345,7 @@ function Products() {
 export default function Forecast() {
   const [loc, setLoc] = useState(FORECAST_LOCATIONS[0])
   const [day, setDay] = useState<string | null>(null)
+  const products = useRef<HTMLDivElement>(null)
 
   const point = useQuery({
     queryKey: ['point', loc.lat, loc.lon],
@@ -245,13 +379,18 @@ export default function Forecast() {
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Forecast</h1>
-        <p className="mt-1 max-w-3xl text-muted">
-          The National Weather Service forecast for the islands, hour by hour and day by day, with
-          the forecaster's own discussion.
-        </p>
-      </header>
+      <h1 className="text-2xl font-semibold tracking-tight">Forecast</h1>
+
+      <Synopsis
+        onJump={() =>
+          products.current?.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? 'auto'
+              : 'smooth',
+            block: 'start',
+          })
+        }
+      />
 
       <Rail row="flex items-center gap-x-5">
         <SegmentedControl
@@ -307,7 +446,9 @@ export default function Forecast() {
         )}
       </section>
 
-      <Products />
+      <div ref={products}>
+        <Products />
+      </div>
     </div>
   )
 }

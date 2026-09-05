@@ -233,8 +233,7 @@ export default function Tropical() {
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Tropical</h1>
         <p className="mt-1 max-w-3xl text-muted">
-          Active systems in the Central and Eastern Pacific, with the advisories as issued by the
-          Central Pacific Hurricane Center and the National Hurricane Center.
+          Active systems in the Central and Eastern Pacific.
         </p>
       </header>
 

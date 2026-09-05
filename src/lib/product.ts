@@ -68,3 +68,14 @@ export function parseAfd(text: string): { heading: string; body: string }[] {
 
   return sections.length ? sections : [{ heading: 'Discussion', body: body.trim() }]
 }
+
+/**
+ * The section a reader wants first.
+ *
+ * Every AFD opens with a synopsis — the state of the atmosphere in a paragraph,
+ * before the forecaster gets into aviation minimums and fire weather. It is the
+ * one part worth putting in front of someone who has not asked for the rest.
+ */
+export function synopsis(sections: { heading: string; body: string }[]) {
+  return sections.find((s) => s.heading.includes('SYNOPSIS')) ?? sections[0] ?? null
+}

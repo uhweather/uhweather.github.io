@@ -32,7 +32,7 @@ export const PAGES: PageMeta[] = [
     path: '/forecast',
     title: 'Forecast — Weather Glass',
     description:
-      'The seven-day forecast for Hawai‘i with the forecaster’s discussion, surf and marine text from NWS Honolulu.',
+      'The seven-day forecast for Hawai‘i, hour by hour, with the discussion, surf and marine text from NWS Honolulu.',
   },
   {
     path: '/satellite',
