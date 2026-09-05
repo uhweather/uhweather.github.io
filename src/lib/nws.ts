@@ -75,7 +75,9 @@ export interface ForecastPeriod {
 }
 
 export interface Forecast {
-  updated: string
+  /** When the office last revised the grid this was generated from. The
+   *  `updated` field an earlier version read here does not exist. */
+  updateTime: string
   generatedAt: string
   periods: ForecastPeriod[]
 }
