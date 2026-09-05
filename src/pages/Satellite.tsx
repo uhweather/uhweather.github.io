@@ -286,24 +286,25 @@ export default function Satellite() {
         )}
       </div>
 
-      {(animate || combine) && (
-        <div className="flex shrink-0 flex-wrap items-baseline justify-center gap-x-4 gap-y-1">
-          <p className="text-lg font-medium tabular-nums leading-none text-ink">
-            {coverage} loop
-          </p>
-          <p className="text-sm tabular-nums text-muted">{frameGap} min between frames</p>
-          {active.stamp && (
-            <p className="text-sm tabular-nums text-muted">
-              frame {frameCount ? index + 1 : 0} of {frameCount} ·{' '}
-              <span className="font-medium text-ink">
-                {hstDateTime(active.stamp.toISOString())} HST
-              </span>
+      {/* Loop timing and colour scales share one row: the timing sat on a line
+          of its own and the imagery paid for it in height. */}
+      <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-8 gap-y-2">
+        {(animate || combine) && (
+          <div className="shrink-0 leading-tight">
+            <p className="text-base font-medium tabular-nums text-ink">{coverage} loop</p>
+            <p className="text-xs tabular-nums text-muted">
+              {frameGap} min steps · {frameCount ? index + 1 : 0} of {frameCount}
             </p>
-          )}
-        </div>
-      )}
+            {active.stamp && (
+              <p className="text-xs font-medium tabular-nums text-ink">
+                {hstDateTime(active.stamp.toISOString())} HST
+              </p>
+            )}
+          </div>
+        )}
 
-      <ColorBar bands={shown} />
+        <ColorBar bands={shown} />
+      </div>
 
       {/* Transport. The legacy jsImagePlayer had first/back/stop/play/forward/
           last and a frame box; this keeps that model and adds a scrubber. */}

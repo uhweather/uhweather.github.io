@@ -12,10 +12,10 @@ function Wordmark() {
     <Link to="/" viewTransition className="flex min-w-0 items-center gap-2.5">
       <svg
         aria-hidden="true"
-        width="22"
-        height="22"
+        width="26"
+        height="26"
         viewBox="0 0 24 24"
-        className="shrink-0 text-primary"
+        className="mt-0.5 shrink-0 text-primary"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
@@ -27,11 +27,15 @@ function Wordmark() {
         <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
       </svg>
       <span className="min-w-0">
-        <span className="block truncate text-[15px] font-semibold tracking-tight text-ink">
-          Weather Glass
+        {/* Two lines: the rail is narrow and the name is the one thing on it that
+            should be readable at a glance. */}
+        <span className="block text-xl font-semibold leading-[1.1] tracking-tight text-ink">
+          Weather
+          <br />
+          Glass
         </span>
-        <span className="block truncate text-[11px] text-muted">
-          Student project · UH Mānoa
+        <span className="mt-1 block text-[11px] leading-snug text-muted">
+          A passion project by ATMO students @ UH Mānoa
         </span>
       </span>
     </Link>

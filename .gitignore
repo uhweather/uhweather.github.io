@@ -4,6 +4,7 @@ dist
 *.local
 .vite
 
-# Agent scratch files — not part of the project.
+# Working notes — kept locally, not part of the published repo.
+PROGRESS.md
 CLAUDE.md
 .claude/

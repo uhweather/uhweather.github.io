@@ -6,9 +6,6 @@ bundle with **no backend, no database, and no infrastructure to maintain**.
 A passion project by a group of students in the Department of Atmospheric Sciences at the
 University of Hawai‘i at Mānoa. Not an official University of Hawai‘i or NOAA publication.
 
-See **[PROGRESS.md](PROGRESS.md)** for what is built, what is next, and the notes on each
-upstream source.
-
 ## The idea
 
 NOAA publishes its data over HTTPS with open CORS headers, so the browser can fetch it
