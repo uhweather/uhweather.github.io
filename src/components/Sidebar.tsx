@@ -37,7 +37,7 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
           read at a glance without the byline squeezing it. */}
       <span className="flex items-center gap-3">
         {logo}
-        <span className="text-xl font-semibold leading-[1.05] tracking-tight text-ink">
+        <span className="text-[30px] font-semibold leading-[1.02] tracking-tight text-ink">
           Weather
           <br />
           Glass
