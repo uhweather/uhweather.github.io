@@ -191,6 +191,33 @@ export default function FigureViewer({
   // touch with one path, so there is no separate touch branch to keep in step.
   const points = useRef(new Map<number, { x: number; y: number }>())
   const gesture = useRef<{ distance: number; zoom: Zoom } | null>(null)
+  // How far the pointer travelled while down, so the end of a pan is not read
+  // as a click on the darkness.
+  const travel = useRef(0)
+
+  /**
+   * Is this point on the picture, or on the black around it?
+   *
+   * The image element fills the frame and `object-contain` letterboxes inside
+   * it, so the element's own box says nothing about where the picture actually
+   * is — which is why a tap on the empty half of the screen used to land on the
+   * image and do nothing. This measures the painted rectangle, moved and scaled
+   * by whatever zoom is in effect.
+   */
+  const onPicture = useCallback(
+    (clientX: number, clientY: number) => {
+      const p = painted()
+      if (!p) return true
+      const w = (p.width * zoom.scale) / 2
+      const h = (p.height * zoom.scale) / 2
+      const cx = p.box.left + p.box.width / 2 + zoom.x
+      const cy = p.box.top + p.box.height / 2 + zoom.y
+      return Math.abs(clientX - cx) <= w && Math.abs(clientY - cy) <= h
+    },
+    [painted, zoom],
+  )
+
+  const [over, setOver] = useState(true)
 
   const spread = () => {
     const [a, b] = [...points.current.values()]
@@ -203,14 +230,21 @@ export default function FigureViewer({
 
   const onPointerDown = (e: React.PointerEvent) => {
     setEased(false)
+    travel.current = 0
     ;(e.target as Element).setPointerCapture?.(e.pointerId)
     points.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (points.current.size === 2) gesture.current = { distance: spread().distance, zoom }
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
+    // Hovering counts too: the cursor should say what a click will do before it
+    // is spent.
+    const here = onPicture(e.clientX, e.clientY)
+    if (here !== over) setOver(here)
+
     const was = points.current.get(e.pointerId)
     if (!was) return
+    travel.current += Math.hypot(e.clientX - was.x, e.clientY - was.y)
     points.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     if (points.current.size >= 2 && gesture.current) {
@@ -227,6 +261,12 @@ export default function FigureViewer({
   const onPointerUp = (e: React.PointerEvent) => {
     points.current.delete(e.pointerId)
     if (points.current.size < 2) gesture.current = null
+  }
+
+  /** Anywhere but the picture is a way out. */
+  const onClick = (e: React.MouseEvent) => {
+    if (travel.current > 6) return
+    if (!onPicture(e.clientX, e.clientY)) close()
   }
 
   const toggle = (e: React.MouseEvent) => {
@@ -250,9 +290,10 @@ export default function FigureViewer({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onClick={onClick}
           onDoubleClick={toggle}
           className={`pointer-events-auto relative min-h-0 flex-1 touch-none overflow-hidden ${
-            zoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in'
+            !over ? 'cursor-zoom-out' : zoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in'
           }`}
         >
           <img

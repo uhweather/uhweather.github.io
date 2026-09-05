@@ -54,7 +54,7 @@ function span(minutes: number): string {
 }
 
 /** Hands over the link to exactly what is on screen. */
-function ShareView() {
+function ShareView({ className = '' }: { className?: string }) {
   const [copied, setCopied] = useState(false)
 
   const share = async () => {
@@ -77,7 +77,7 @@ function ShareView() {
       type="button"
       onClick={share}
       title="Link to this exact view"
-      className="flex items-center gap-1.5 py-1 text-sm text-muted transition-colors hover:text-ink"
+      className={`flex shrink-0 items-center gap-1.5 py-1 text-sm text-muted transition-colors hover:text-ink ${className}`}
     >
       <UiIcons.share size={15} /> {copied ? 'Copied' : 'Share'}
     </button>
@@ -230,7 +230,10 @@ export default function Satellite() {
           site's index was a channel × view matrix you could read at a glance;
           two dropdowns replaced that with a scan and twice the clicks. */}
       <header className="bare-hide flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-2">
-        <Rail>
+        {/* Share rides with the view row: it is the shortest of the three and
+            the only one with room to spare, where the row below it is already
+            scrolling on a phone and was cutting the button in half. */}
+        <Rail row="flex items-center gap-x-5">
           <SegmentedControl
             label="View"
             name="View"
@@ -238,6 +241,7 @@ export default function Satellite() {
             onChange={(v) => setSector(v as SatSector)}
             options={SAT_SECTORS.map((s) => ({ id: s.id, label: s.short, title: s.blurb }))}
           />
+          <ShareView className="ml-auto" />
         </Rail>
         {!combine && (
           <Rail>
@@ -286,7 +290,6 @@ export default function Satellite() {
               { id: 'still', label: 'Latest' },
             ]}
           />
-          <ShareView />
         </Rail>
       </header>
 
