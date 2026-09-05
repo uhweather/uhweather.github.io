@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   animSizeFor,
   bandSpec,
@@ -18,7 +19,15 @@ import {
   type SatSector,
 } from '../lib/sources'
 import { useCombinedLoop, useFrameLoop } from '../lib/useFrameLoop'
-import { useSharedCombine, useSharedPanels, useSharedSector } from '../lib/viewState'
+import {
+  setSharedCombine,
+  setSharedPanels,
+  setSharedSector,
+  useSharedCombine,
+  useSharedPanels,
+  useSharedSector,
+} from '../lib/viewState'
+import { DEFAULT_VIEW, readView, writeView } from '../lib/shareLink'
 import { ErrorState, SegmentedControl } from '../components/ui'
 import SatelliteMatrix from '../components/SatelliteMatrix'
 import ColorBar from '../components/ColorBar'
@@ -43,24 +52,80 @@ function span(minutes: number): string {
   return `${Math.floor(hours / 24)} d ${hours % 24} h`.replace(' 0 h', '')
 }
 
+/** Hands over the link to exactly what is on screen. */
+function ShareView() {
+  const [copied, setCopied] = useState(false)
+
+  const share = async () => {
+    const url = window.location.href
+    try {
+      if (navigator.share) {
+        await navigator.share({ url, title: document.title })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Dismissed, or no clipboard permission — the URL is in the address bar.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={share}
+      title="Link to this exact view"
+      className="flex items-center gap-1.5 py-1 text-sm text-muted transition-colors hover:text-ink"
+    >
+      <span aria-hidden="true">⧉</span> {copied ? 'Copied' : 'Share'}
+    </button>
+  )
+}
+
 export default function Satellite() {
   // Shared with the overview, so a view chosen in either place holds.
   const [sector, setSector] = useSharedSector()
   const [panels, setPanel] = useSharedPanels()
-  const [band, setBand] = useState<SatBand>('GEOCOLOR')
-  // Frames, not hours: every frame is a consecutive scan, so a longer loop is a
-  // longer loop rather than a coarser one. 36 of a 10-minute sector is 6 hours.
-  const [frames, setFrames] = useState(36)
-  const [step, setStep] = useState(1)
-  const [speed, setSpeed] = useState(150)
-  const [quality, setQuality] = useState<SatQuality>('small')
-  // Animation is the default view: a still frame tells you the sky's state, a
-  // loop tells you where it is going, which is the reason to open this page.
-  const [animate, setAnimate] = useState(true)
-  const [browsing, setBrowsing] = useState(false)
   // 2x2 of four channels, driven by one transport. Persisted with the sector and
   // the panel channels: they are one setting, and a display should come back to it.
   const [combine, setCombine] = useSharedCombine()
+  const [params, setParams] = useSearchParams()
+
+  // A link decides the view it names; anything it leaves out keeps whatever this
+  // browser was last set to. Read once, before the first frame is asked for.
+  const [link] = useState(() =>
+    readView(new URLSearchParams(window.location.search), {
+      ...DEFAULT_VIEW,
+      sector,
+      combine,
+      panels,
+    }),
+  )
+
+  const [band, setBand] = useState<SatBand>(link.band)
+  // Frames, not hours: every frame is a consecutive scan, so a longer loop is a
+  // longer loop rather than a coarser one. 36 of a 10-minute sector is 6 hours.
+  const [frames, setFrames] = useState(link.frames)
+  const [step, setStep] = useState(link.step)
+  const [speed, setSpeed] = useState(link.speed)
+  const [quality, setQuality] = useState<SatQuality>(link.quality)
+  // Animation is the default view: a still frame tells you the sky's state, a
+  // loop tells you where it is going, which is the reason to open this page.
+  const [animate, setAnimate] = useState(link.animate)
+  const [browsing, setBrowsing] = useState(false)
+
+  // The shared half of the link goes into the stores, so the overview opens on
+  // whatever the link asked for too. Writing the URL back waits for this: until
+  // it lands the stores still hold the last session's view, and publishing that
+  // would overwrite the link with the thing it was sent to replace.
+  const [applied, setApplied] = useState(false)
+  useEffect(() => {
+    setSharedSector(link.sector)
+    setSharedCombine(link.combine)
+    setSharedPanels(link.panels)
+    setApplied(true)
+  }, [link])
   // Which figure is open full screen, and the rectangle it grew out of. `null`
   // for the panel means the single view.
   const [focus, setFocus] = useState<{ panel: number | null; origin: DOMRect } | null>(null)
@@ -109,6 +174,16 @@ export default function Satellite() {
   const coverage = span(frames * frameGap)
 
   const { jump, setPlaying, playing, index } = active
+
+  // The address bar is the share sheet: whatever is on screen is in the URL, so
+  // copying it is enough and there is nothing to keep in step by hand.
+  const query = writeView(
+    { sector, combine, band, panels, frames, step, speed, quality, animate },
+    DEFAULT_VIEW,
+  ).toString()
+  useEffect(() => {
+    if (applied && query !== params.toString()) setParams(query, { replace: true })
+  }, [applied, query, params, setParams])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -210,6 +285,7 @@ export default function Satellite() {
               { id: 'still', label: 'Latest' },
             ]}
           />
+          <ShareView />
         </Rail>
       </header>
 

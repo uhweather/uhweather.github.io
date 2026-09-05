@@ -5,6 +5,7 @@ import AlertsDrawer from './AlertsDrawer'
 import CommandPalette from './CommandPalette'
 import DisplayRail from './DisplayRail'
 import { useFullscreen } from '../lib/useFullscreen'
+import { pageMeta } from '../lib/pageMeta'
 
 function useTheme() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
@@ -42,6 +43,12 @@ export default function Layout() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+  }, [pathname])
+
+  // The build gives each route's HTML its own title; this keeps a client-side
+  // navigation in step, so a bookmark or a tab says which page it is on.
+  useEffect(() => {
+    document.title = pageMeta(pathname.replace(/(.)\/$/, '$1')).title
   }, [pathname])
 
   return (

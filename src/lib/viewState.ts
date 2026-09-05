@@ -56,7 +56,7 @@ function store<T>(key: string, fallback: T, parse: (raw: string) => T | null) {
 
 /** Opens on the Northeast Pacific: it shows the systems heading for the islands,
  *  and the close view is one click away. */
-const DEFAULT_SECTOR: SatSector = 'tpw'
+export const DEFAULT_SECTOR: SatSector = 'tpw'
 
 const sectorStore = store<SatSector>('weather-glass:sector', DEFAULT_SECTOR, (raw) => {
   // Written unquoted by earlier builds; accept both.
@@ -91,6 +91,8 @@ const panelStore = store<SatBand[]>('weather-glass:panels', DEFAULT_PANELS, (raw
   return Array.isArray(v) && v.length === 4 && v.every(isBand) ? (v as SatBand[]) : null
 })
 
+export const setSharedPanels = panelStore.set
+
 export function useSharedPanels(): [SatBand[], (index: number, band: SatBand) => void] {
   const panels = panelStore.useValue()
   const setPanel = (index: number, band: SatBand) => {
@@ -115,6 +117,8 @@ const combineStore = store<boolean>('weather-glass:combine', false, (raw) => {
   const v: unknown = JSON.parse(raw)
   return typeof v === 'boolean' ? v : null
 })
+
+export const setSharedCombine = combineStore.set
 
 export function useSharedCombine(): [boolean, (v: boolean) => void] {
   return [combineStore.useValue(), combineStore.set]

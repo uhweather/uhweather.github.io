@@ -34,19 +34,26 @@ jobs:
       # A user or org site (<name>.github.io) is served from the root; a project
       # site is served from /<repo>/. Deriving it from the repository name keeps
       # this correct in either place rather than needing a hand edit after a fork.
-      - name: Work out the base path
-        id: base
+      # A user or org site is also its own origin; a project site hangs off the
+      # owner's. Link cards carry absolute URLs, so both halves are needed.
+      - name: Work out where this will be served from
+        id: site
         run: |
-          if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
+          name="${{ github.event.repository.name }}"
+          owner="${{ github.repository_owner }}"
+          if [[ "$name" == *.github.io ]]; then
             echo "path=/" >> "$GITHUB_OUTPUT"
+            echo "url=https://$name" >> "$GITHUB_OUTPUT"
           else
-            echo "path=/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
+            echo "path=/$name/" >> "$GITHUB_OUTPUT"
+            echo "url=https://$owner.github.io" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build
         run: npm run build
         env:
-          BASE_PATH: ${{ steps.base.outputs.path }}
+          BASE_PATH: ${{ steps.site.outputs.path }}
+          SITE_URL: ${{ steps.site.outputs.url }}
 
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
