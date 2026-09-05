@@ -45,17 +45,18 @@ export default function ColorBar({
 
   return (
     <div
-      /* `shrink-0` holds the strip's height where this sits in a column; the
-         width caps are what keep two scales from running off a phone screen
-         instead of wrapping onto their own lines. */
-      className={`flex max-w-full shrink-0 flex-wrap items-start justify-center gap-x-8 gap-y-2 ${className}`}
+      /* Two columns on a phone, a centred row from `sm` up. Four scales stacked
+         one per line was most of the screen; paired, they cost half that and are
+         still wide enough to read the numbers off. `shrink-0` holds the block's
+         height where this sits in a column. */
+      className={`grid max-w-full shrink-0 grid-cols-2 items-start gap-x-4 gap-y-2 sm:flex sm:flex-wrap sm:justify-center sm:gap-x-8 ${className}`}
     >
       {groups.map((g) => (
         <figure key={g.colorbar} className="flex min-w-0 max-w-full flex-col items-center gap-1">
           <img
             src={g.colorbar}
             alt={`Colour scale for ${g.labels.join(', ')}: ${g.scale ?? 'see NESDIS'}`}
-            className="h-7 w-auto max-w-full object-contain"
+            className="h-6 w-auto max-w-full object-contain sm:h-7"
           />
           <figcaption className="text-center text-xs leading-tight text-faint">
             <span className="font-medium text-muted">{g.labels.join(' · ')}</span>

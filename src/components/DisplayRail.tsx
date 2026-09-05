@@ -13,6 +13,7 @@ import {
 import { useAlerts } from './AlertsDrawer'
 import { useAutoScroll } from '../lib/useAutoScroll'
 import { parseAfd, synopsis } from '../lib/product'
+import { UiIcons } from './UiIcons'
 
 function Conditions() {
   const station = STATIONS_BY_ID.get(PRIMARY_STATION)!
@@ -202,7 +203,7 @@ export default function DisplayRail({
               title="Exit display mode (F)"
               className="rounded border border-line px-2 py-1 text-sm leading-none text-muted transition-colors hover:bg-surface-hover hover:text-ink"
             >
-              <span aria-hidden="true">⤡</span>
+              <UiIcons.collapse size={16} />
             </button>
           )}
         </span>

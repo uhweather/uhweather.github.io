@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { UiIcons } from './UiIcons'
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 const IN_MS = 300
@@ -282,7 +283,7 @@ export default function FigureViewer({
           aria-label="Zoom out"
           className={button}
         >
-          −
+          <UiIcons.minus size={16} />
         </button>
         <span className="w-12 text-center text-xs tabular-nums text-white/70">
           {Math.round(zoom.scale * 100)}%
@@ -296,10 +297,10 @@ export default function FigureViewer({
           aria-label="Zoom in"
           className={button}
         >
-          +
+          <UiIcons.plus size={16} />
         </button>
         <button type="button" onClick={close} aria-label="Close" className={`ml-1.5 ${button}`}>
-          ✕
+          <UiIcons.close size={16} />
         </button>
       </div>
     </div>,

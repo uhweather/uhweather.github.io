@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NAV_ITEMS } from './nav-items'
 import { Icons } from './NavIcons'
+import { UiIcons } from './UiIcons'
 
 /**
  * Quick jump, opened with ⌘K / Ctrl-K.
@@ -64,7 +65,7 @@ export default function CommandPalette({
         className="w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-float"
       >
         <div className="flex items-center gap-2 border-b border-line px-3">
-          <span aria-hidden="true" className="text-muted">⌕</span>
+          <UiIcons.search size={17} className="shrink-0 text-muted" />
           <input
             ref={inputRef}
             value={query}

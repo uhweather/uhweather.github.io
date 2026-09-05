@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { nws, type Alert } from '../lib/nws'
 import { hstDateTime } from '../lib/units'
+import { UiIcons } from './UiIcons'
 
 export function useAlerts() {
   return useQuery({
@@ -45,7 +46,7 @@ function AlertItem({ alert }: { alert: Alert }) {
           aria-hidden="true"
           className={`shrink-0 text-faint transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         >
-          ▾
+          <UiIcons.chevronDown size={16} />
         </span>
       </button>
       {open && (
@@ -125,7 +126,7 @@ export default function AlertsDrawer({
             aria-label="Close alerts"
             className="rounded-md p-2 text-muted hover:bg-surface-hover hover:text-ink"
           >
-            ✕
+            <UiIcons.close size={16} />
           </button>
         </header>
 
@@ -138,7 +139,7 @@ export default function AlertsDrawer({
           )}
           {data && data.length === 0 && (
             <div className="py-10 text-center">
-              <p className="text-3xl" aria-hidden="true">🌤️</p>
+              <UiIcons.clear size={40} className="mx-auto text-faint" />
               <p className="mt-2 text-sm font-medium text-ink">No active alerts</p>
               <p className="mt-1 text-xs text-muted">
                 Nothing in effect for the state right now.
@@ -178,7 +179,8 @@ export default function AlertsDrawer({
             rel="noreferrer"
             className="text-xs text-primary hover:underline"
           >
-            Official warnings from NWS Honolulu ↗
+            Official warnings from NWS Honolulu{' '}
+            <UiIcons.external size={12} className="inline align-[-1px]" />
           </a>
         </footer>
       </div>

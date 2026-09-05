@@ -6,6 +6,7 @@ import { PRIMARY_STATION } from '../lib/stations'
 import { compass, fmt, readSpeed, readTemp, relativeAge } from '../lib/units'
 import { NAV_ITEMS } from './nav-items'
 import AlertsPanel from './AlertsPanel'
+import { UiIcons } from './UiIcons'
 
 /**
  * Mark and name as two columns, the byline under both.
@@ -164,7 +165,7 @@ export default function Sidebar({
               aria-label="Jump to a section"
               className={`flex items-center gap-1.5 ${iconBtn}`}
             >
-              <span aria-hidden="true">⌕</span>
+              <UiIcons.search size={17} />
               <kbd className="rounded border border-line px-1 py-0.5 font-mono text-[10px] text-faint">
                 {mac ? '⌘' : 'Ctrl '}K
               </kbd>
@@ -176,7 +177,7 @@ export default function Sidebar({
               title="Fill the screen for an external display (F)"
               className={`ml-auto flex items-center gap-1.5 ${iconBtn}`}
             >
-              <span aria-hidden="true">{fullscreen ? '⤡' : '⤢'}</span>
+              {fullscreen ? <UiIcons.collapse /> : <UiIcons.expand />}
             </button>
             <button
               type="button"
@@ -184,7 +185,7 @@ export default function Sidebar({
               aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
               className={iconBtn}
             >
-              <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
+              {dark ? <UiIcons.sun /> : <UiIcons.moon />}
             </button>
           </div>
         </div>
@@ -197,7 +198,7 @@ export default function Sidebar({
             <Wordmark compact />
             <div className="ml-auto flex items-center gap-1">
               <button type="button" onClick={onOpenAlerts} aria-label="Weather alerts" className={iconBtn}>
-                <span aria-hidden="true">🔔</span>
+                <UiIcons.bell />
               </button>
               <button
                 type="button"
@@ -205,7 +206,7 @@ export default function Sidebar({
                 aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
                 className={iconBtn}
               >
-                <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
+                {dark ? <UiIcons.sun /> : <UiIcons.moon />}
               </button>
               <button
                 type="button"
@@ -213,7 +214,7 @@ export default function Sidebar({
                 aria-label={fullscreen ? 'Exit display mode' : 'Enter display mode'}
                 className={iconBtn}
               >
-                <span aria-hidden="true">{fullscreen ? '⤡' : '⤢'}</span>
+                {fullscreen ? <UiIcons.collapse /> : <UiIcons.expand />}
               </button>
               <button
                 type="button"
@@ -222,7 +223,7 @@ export default function Sidebar({
                 aria-label="Toggle navigation"
                 className={iconBtn}
               >
-                <span aria-hidden="true">{open ? '✕' : '☰'}</span>
+                {open ? <UiIcons.close /> : <UiIcons.menu />}
               </button>
             </div>
           </div>

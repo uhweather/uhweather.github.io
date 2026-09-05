@@ -1,5 +1,6 @@
 import { LINK_GROUPS } from '../lib/sources'
 import { Card } from '../components/ui'
+import { UiIcons } from '../components/UiIcons'
 
 export default function About() {
   return (
@@ -56,7 +57,7 @@ export default function About() {
                     rel="noreferrer"
                     className="font-medium text-primary underline-offset-2 hover:underline"
                   >
-                    {l.label} <span aria-hidden="true">↗</span>
+                    {l.label} <UiIcons.external size={13} className="inline align-[-1px]" />
                   </a>
                   <p className="text-sm text-muted">{l.blurb}</p>
                 </li>

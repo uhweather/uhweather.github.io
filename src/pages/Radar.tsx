@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { RADAR_SITES, radarPageUrl } from '../lib/sources'
 import { useRadarLoop } from '../lib/useFrameLoop'
 import { SegmentedControl } from '../components/ui'
+import { UiIcons } from '../components/UiIcons'
 
 const SPEEDS = [
   { ms: 800, label: '0.5×' },
@@ -49,7 +50,7 @@ export default function Radar() {
             rel="noreferrer"
             className="py-1 text-sm text-muted transition-colors hover:text-ink"
           >
-            Interactive ↗
+            Interactive <UiIcons.external size={12} className="inline align-[-1px]" />
           </a>
           <SegmentedControl
             label="View mode"
@@ -93,21 +94,29 @@ export default function Radar() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => jump(0)} aria-label="First frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">⏮</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.first size={16} />
+            </button>
             <button type="button" onClick={() => jump(index - 1)} aria-label="Previous frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">◀</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.prev size={16} />
+            </button>
             <button
               type="button"
               onClick={() => setPlaying(!playing)}
               aria-label={playing ? 'Pause' : 'Play'}
               className="rounded px-2.5 py-1.5 text-sm font-medium text-primary hover:bg-surface-hover"
             >
-              {playing ? '⏸' : '▶'}
+              {playing ? <UiIcons.pause size={18} /> : <UiIcons.play size={18} />}
             </button>
             <button type="button" onClick={() => jump(index + 1)} aria-label="Next frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">▶</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.next size={16} />
+            </button>
             <button type="button" onClick={() => jump(9)} aria-label="Last frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">⏭</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.last size={16} />
+            </button>
           </div>
 
           <label className="flex min-w-40 flex-1 items-center gap-2">

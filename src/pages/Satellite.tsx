@@ -35,6 +35,7 @@ import GuideTicker from '../components/GuideTicker'
 import PanelChannel from '../components/PanelChannel'
 import FigureViewer from '../components/FigureViewer'
 import Rail from '../components/Rail'
+import { UiIcons } from '../components/UiIcons'
 import { hstDateTime } from '../lib/units'
 
 const SPEEDS = [
@@ -78,7 +79,7 @@ function ShareView() {
       title="Link to this exact view"
       className="flex items-center gap-1.5 py-1 text-sm text-muted transition-colors hover:text-ink"
     >
-      <span aria-hidden="true">⧉</span> {copied ? 'Copied' : 'Share'}
+      <UiIcons.share size={15} /> {copied ? 'Copied' : 'Share'}
     </button>
   )
 }
@@ -265,7 +266,7 @@ export default function Satellite() {
             title="Browse every channel and view (B)"
             className="flex items-center gap-1.5 py-1 text-sm text-muted transition-colors hover:text-ink"
           >
-            <span aria-hidden="true">⊞</span> Browse all
+            <UiIcons.grid size={15} /> Browse all
           </button>
           <SegmentedControl
             label="Layout"
@@ -416,21 +417,29 @@ export default function Satellite() {
         <div className="bare-hide flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => jump(0)} aria-label="First frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">⏮</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.first size={16} />
+            </button>
             <button type="button" onClick={() => jump(index - 1)} aria-label="Previous frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">◀</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.prev size={16} />
+            </button>
             <button
               type="button"
               onClick={() => setPlaying(!playing)}
               aria-label={playing ? 'Pause' : 'Play'}
               className="rounded px-2.5 py-1.5 text-sm font-medium text-primary hover:bg-surface-hover"
             >
-              {playing ? '⏸' : '▶'}
+              {playing ? <UiIcons.pause size={18} /> : <UiIcons.play size={18} />}
             </button>
             <button type="button" onClick={() => jump(index + 1)} aria-label="Next frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">▶</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.next size={16} />
+            </button>
             <button type="button" onClick={() => jump(frameCount - 1)} aria-label="Last frame"
-              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">⏭</button>
+              className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-ink">
+              <UiIcons.last size={16} />
+            </button>
           </div>
 
           <label className="flex min-w-40 flex-1 items-center gap-2">

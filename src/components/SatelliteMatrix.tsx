@@ -1,5 +1,6 @@
 import { Fragment, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { UiIcons } from './UiIcons'
 import {
   SAT_BANDS,
   SAT_SECTORS,
@@ -78,7 +79,7 @@ export default function SatelliteMatrix({
             aria-label="Close"
             className="rounded-md p-2 text-muted transition-colors hover:bg-surface-hover hover:text-ink"
           >
-            ✕
+            <UiIcons.close size={16} />
           </button>
         </header>
 

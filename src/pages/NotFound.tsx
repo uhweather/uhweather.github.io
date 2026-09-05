@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
+import { UiIcons } from '../components/UiIcons'
 
 export default function NotFound() {
   return (
     <div className="py-20 text-center">
-      <p className="text-6xl" aria-hidden="true">🌊</p>
+      <UiIcons.wave size={72} className="mx-auto text-faint" />
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">Page not found</h1>
       <p className="mt-2 text-muted">
         That page does not exist.

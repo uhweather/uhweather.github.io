@@ -6,6 +6,7 @@ import CommandPalette from './CommandPalette'
 import DisplayRail from './DisplayRail'
 import { useFullscreen } from '../lib/useFullscreen'
 import { pageMeta } from '../lib/pageMeta'
+import { UiIcons } from './UiIcons'
 
 function useTheme() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
@@ -150,7 +151,7 @@ export default function Layout() {
           title="Exit display mode (F)"
           className="fixed bottom-3 left-3 z-40 xl:hidden rounded border border-line bg-surface/90 p-2 text-muted opacity-60 shadow-card backdrop-blur transition-opacity hover:opacity-100 focus-visible:opacity-100"
         >
-          <span aria-hidden="true">⤡</span>
+          <UiIcons.collapse />
         </button>
       )}
     </div>

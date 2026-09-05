@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { UiIcons } from './UiIcons'
 
 /**
  * A row of controls that scrolls sideways when it runs longer than the screen.
@@ -63,7 +64,7 @@ function Edge({ side, show }: { side: 'start' | 'end'; show: boolean }) {
         end ? 'right-0 justify-end bg-gradient-to-l' : 'left-0 justify-start bg-gradient-to-r'
       } ${show ? 'opacity-100' : 'opacity-0'}`}
     >
-      {end ? '›' : '‹'}
+      {end ? <UiIcons.chevronRight size={16} /> : <UiIcons.chevronLeft size={16} />}
     </span>
   )
 }

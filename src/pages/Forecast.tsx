@@ -318,25 +318,37 @@ function Products() {
       )}
 
       <div className="mt-3">
-        {isLoading && <Skeleton className="h-64 w-full" />}
-        {isError && (
+        {/* Nothing has been asked for yet while the index is still coming: the
+            body query is disabled until it names an id, so it reports neither
+            loading nor error and the panel would sit empty. */}
+        {(isLoading || (issued.isLoading && !data)) && <Skeleton className="h-64 w-full" />}
+        {(isError || issued.isError) && (
           <ErrorState
             source="api.weather.gov"
-            message={(error as Error).message}
-            onRetry={() => refetch()}
+            message={((error ?? issued.error) as Error).message}
+            onRetry={() => (issued.isError ? issued.refetch() : refetch())}
           />
         )}
         {issued.isSuccess && !issued.data.length && (
           <p className="text-sm text-muted">No {meta.label.toLowerCase()} product in the archive.</p>
         )}
-        {sections.map((s) => (
-          <article key={s.heading} className="mb-5 max-w-[74ch] last:mb-0">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-faint">
-              {s.heading}
-            </h3>
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{s.body}</p>
-          </article>
-        ))}
+        {/* Keyed on the product, so switching tears the old one down rather than
+            reconciling 559 zone blocks against 7 discussion sections. */}
+        <div key={data?.id ?? 'none'}>
+          {sections.map((section, i) => (
+            /* By position, not by heading: a zone forecast repeats TODAY and
+               TONIGHT once per zone, and duplicate keys leave React holding
+               nodes from the product you just switched away from. */
+            <article key={i} className="mb-5 max-w-[74ch] last:mb-0">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-faint">
+                {section.heading}
+              </h3>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+                {section.body}
+              </p>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   )
