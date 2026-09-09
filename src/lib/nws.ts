@@ -1,3 +1,5 @@
+import { currentAlerts } from './alerts'
+
 /**
  * Client for api.weather.gov.
  *
@@ -83,6 +85,12 @@ export interface Forecast {
 }
 
 export interface Alert {
+  sent?: string
+  status?: string
+  messageType?: string
+  ends?: string | null
+  references?: { identifier: string }[]
+  parameters?: Record<string, string[]>
   id: string
   areaDesc: string
   severity: string
@@ -165,7 +173,7 @@ export const nws = {
   activeAlerts: (area = 'HI') =>
     get<{ features: { properties: Alert }[] }>(
       `/alerts/active?area=${area}`,
-    ).then((r) => r.features.map((f) => f.properties)),
+    ).then((r) => currentAlerts(r.features.map((f) => f.properties))),
 
   /** Index of a text product type (AFD, HWO, SRF…) for an office. */
   productList: (type: string, location: string) =>
