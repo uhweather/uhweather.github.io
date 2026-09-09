@@ -20,6 +20,7 @@ import ColorBar from '../components/ColorBar'
 import GuideTicker from '../components/GuideTicker'
 import PanelChannel from '../components/PanelChannel'
 import FigureViewer from '../components/FigureViewer'
+import { UiIcons } from '../components/UiIcons'
 import { ErrorState, Skeleton } from '../components/ui'
 
 /**
@@ -146,6 +147,12 @@ export default function Home() {
   const [sector, setSector] = useSharedSector()
   const [panels, setPanel] = useSharedPanels()
   const spec = sectorSpec(sector)
+  const liveView = new URLSearchParams({
+    view: sector,
+    panels: panels.join(','),
+    layout: 'grid',
+    mode: 'anim',
+  })
 
   // STAR overwrites the "latest" file in place, so the URL never changes and the
   // browser would happily show yesterday's frame forever. Ticking a token at the
@@ -157,7 +164,7 @@ export default function Home() {
   const [focus, setFocus] = useState<{ panel: number; origin: DOMRect } | null>(null)
 
   return (
-    <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
+    <div className="display-overview flex flex-col gap-3 lg:min-h-0 lg:flex-1">
       <ConditionsStrip className="not-in-display" />
 
       <div className="bare-hide flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -172,6 +179,14 @@ export default function Home() {
         <p className="ml-auto text-xs text-faint">
           Latest scan · updates every {spec.cadenceMinutes} min
         </p>
+        <Link
+          to={`/satellite?${liveView}`}
+          viewTransition
+          className="inline-flex shrink-0 items-center gap-1.5 rounded border border-primary bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-ink transition-colors hover:border-primary-hover hover:bg-primary-hover"
+        >
+          <UiIcons.play size={14} />
+          Watch it live
+        </Link>
       </div>
 
       {/* The grid is pinned to the imagery's own aspect ratio and its width
@@ -179,9 +194,9 @@ export default function Home() {
           shape make a block of that same shape, so nothing is left over as
           letterboxing between them. */}
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div className="flex min-w-0 flex-1 items-center justify-center lg:min-h-0">
+        <div className="display-overview-stage flex min-w-0 flex-1 items-center justify-center lg:min-h-0">
           <div
-            className="grid w-full grid-cols-2 grid-rows-2 gap-1 lg:h-full lg:w-auto lg:max-w-full"
+            className="display-overview-grid grid w-full grid-cols-2 grid-rows-2 gap-1 lg:h-full lg:w-auto lg:max-w-full"
             style={{ aspectRatio: String(spec.aspect) }}
           >
             {panels.map((b, i) => (

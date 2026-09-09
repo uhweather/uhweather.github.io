@@ -67,8 +67,7 @@ export default function ColorBar({
 
       {unscaled.length > 0 && (
         <p className="self-center text-xs leading-tight text-faint">
-          <span className="font-medium text-muted">{unscaled.join(' · ')}</span> — no scale; colour
-          is the scene itself
+          <span className="font-medium text-muted">{unscaled.join(' · ')}</span> — no scale
         </p>
       )}
     </div>

@@ -151,11 +151,11 @@ export default function Sidebar({
           <Byline className="mt-2" />
         </div>
 
-        <nav aria-label="Primary" className="shrink-0">
+        <nav aria-label="Primary" className="min-h-0 overflow-y-auto">
           <NavList />
         </nav>
 
-        <div className="mt-auto flex flex-col gap-2.5">
+        <div className="mt-auto flex shrink-0 flex-col gap-2.5">
           <Conditions />
           <AlertsPanel onOpen={onOpenAlerts} />
           <div className="flex items-center gap-1">

@@ -191,37 +191,6 @@ body {
   ::view-transition-new(root) { animation: none !important; }
 }
 
-/*
- * Display mode.
- *
- * When the rail is beside the imagery it already carries the conditions, the
- * advisories and the forecast, so the copies inside the page are duplicates
- * competing for the height the figures want. They are hidden only at the width
- * where the rail actually appears — below that there is no rail, and hiding them
- * would leave the display with no readings at all.
- */
-@media (min-width: 80rem) {
-  html[data-display='on'] .not-in-display {
-    display: none;
-  }
-}
-
-/*
- * Type sized for a wall, not a desk.
- *
- * A display is read from across a room, and every size in the interface is on
- * the rem scale, so moving the root moves the whole thing together — text,
- * spacing and the rail's own width — instead of leaving a patchwork of one
- * enlarged panel beside unchanged controls. The imagery keeps whatever height is
- * left, which is the right thing to give up: a figure loses a little box and the
- * words become readable.
- */
-@media (min-width: 80rem) {
-  html[data-display='on'] {
-    font-size: 20px;
-  }
-}
-
 /* Display mode, controls stood down. Only the imagery and its reading matter. */
 html[data-bare='on'] .bare-hide {
   display: none;
@@ -265,3 +234,32 @@ html[data-bare='on'] .bare-hide {
  */
 .sat-stage { aspect-ratio: var(--sat-aspect); }
 @media (min-width: 64rem) { .sat-stage { aspect-ratio: auto; } }
+
+/* Scale by both dimensions, keeping tablet text readable and HD type compact. */
+html[data-display='on'] { font-size: clamp(14px, min(1.05vw, 1.48dvh), 20px); }
+html[data-display='on'] .app-shell { height: 100dvh; min-height: 0; overflow: hidden; }
+html[data-display='on'] .display-content,
+html[data-display='on'] .display-body { min-height: 0; }
+html[data-display='on'] #main { min-height: 0; overflow-y: auto; }
+html[data-display='on'] .not-in-display { display: none; }
+/* Keep the original 24rem rail; fit the reading through type, not extra width. */
+.display-reading-rail { width: 24rem; }
+.display-reading-rail .text-sm { font-size: 0.8125rem; }
+.display-reading-rail p { line-height: 1.4; }
+@media (min-width: 1000px) and (max-width: 1279px) {
+  .display-reading-rail { width: 20rem; }
+}
+@media (max-width: 999px) {
+  html[data-display='on'] .display-body { flex-direction: column; }
+  html[data-display='on'] #main { flex: 1 1 42%; }
+  .display-reading-rail {
+    width: 100%; flex: 1 1 58%; border-left: 0; border-top: 1px solid var(--color-line);
+  }
+  .display-reading-rail > section { display: none; }
+  .display-reading-rail > section[aria-label='Active weather alerts'] { display: block; }
+}
+
+html[data-display='on'] .display-overview { min-height: 0; flex: 1; }
+html[data-display='on'] .display-overview-stage { min-height: 0; }
+html[data-display='on'] .display-overview-grid { height: 100%; width: auto; max-width: 100%; }
+.display-toolbar button { min-height: 44px; min-width: 44px; }

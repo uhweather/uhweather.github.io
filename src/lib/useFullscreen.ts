@@ -42,13 +42,14 @@ export function useFullscreen() {
   const toggle = useCallback(async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen()
+      else if (active) setActive(false)
       else await document.documentElement.requestFullscreen()
     } catch {
       // Denied, unsupported, or not from a user gesture: fall back to hiding
       // the chrome, which is most of the benefit on an already-maximised window.
       setActive((v) => !v)
     }
-  }, [])
+  }, [active])
 
   return { active, toggle, bare, setBare }
 }

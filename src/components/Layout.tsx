@@ -6,7 +6,6 @@ import CommandPalette from './CommandPalette'
 import DisplayRail from './DisplayRail'
 import { useFullscreen } from '../lib/useFullscreen'
 import { pageMeta } from '../lib/pageMeta'
-import { UiIcons } from './UiIcons'
 
 function useTheme() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
@@ -53,7 +52,7 @@ export default function Layout() {
   }, [pathname])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg lg:h-dvh lg:flex-row lg:overflow-hidden">
+    <div className="app-shell flex min-h-dvh flex-col bg-bg lg:h-dvh lg:flex-row lg:overflow-hidden">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-surface focus:px-4 focus:py-2 focus:font-medium focus:shadow-float"
@@ -75,11 +74,11 @@ export default function Layout() {
       <AlertsDrawer open={alertsOpen} onClose={() => setAlertsOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
-      <div className="flex min-w-0 flex-1 flex-col lg:min-h-0">
+      <div className="display-content flex min-w-0 flex-1 flex-col lg:min-h-0">
         {/* In display mode the imagery loses its page margins and the space they
             were taking becomes a reading column: the figures are already as big
             as the screen allows, so the padding was the only slack left. */}
-        <div className="flex min-w-0 flex-1 lg:min-h-0">
+        <div className="display-body flex min-w-0 flex-1 lg:min-h-0">
           <main
             id="main"
             className={`flex w-full min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto ${
@@ -95,9 +94,10 @@ export default function Layout() {
 
           {fullscreen.active && (
             <DisplayRail
-              onExit={() => void fullscreen.toggle()}
+              onOpenAlerts={() => setAlertsOpen(true)}
               bare={fullscreen.bare}
               onToggleBare={() => fullscreen.setBare(!fullscreen.bare)}
+              onExit={() => void fullscreen.toggle()}
             />
           )}
         </div>
@@ -127,33 +127,6 @@ export default function Layout() {
         )}
       </div>
 
-      {/* Below the rail's breakpoint there is no rail to carry these, so they
-          float instead. Dim until hovered so they do not sit on the imagery, but
-          never invisible. */}
-      {fullscreen.active && (
-        <button
-          type="button"
-          onClick={() => fullscreen.setBare(!fullscreen.bare)}
-          aria-pressed={fullscreen.bare}
-          aria-label={fullscreen.bare ? 'Show controls' : 'Hide controls'}
-          title={fullscreen.bare ? 'Show controls' : 'Hide controls — imagery only'}
-          className="fixed bottom-3 left-14 z-40 rounded border border-line bg-surface/90 px-2 py-2 text-xs leading-none text-muted opacity-60 shadow-card backdrop-blur transition-opacity hover:opacity-100 focus-visible:opacity-100 xl:hidden"
-        >
-          {fullscreen.bare ? 'Controls off' : 'Controls'}
-        </button>
-      )}
-
-      {fullscreen.active && (
-        <button
-          type="button"
-          onClick={() => void fullscreen.toggle()}
-          aria-label="Exit display mode (F)"
-          title="Exit display mode (F)"
-          className="fixed bottom-3 left-3 z-40 xl:hidden rounded border border-line bg-surface/90 p-2 text-muted opacity-60 shadow-card backdrop-blur transition-opacity hover:opacity-100 focus-visible:opacity-100"
-        >
-          <UiIcons.collapse />
-        </button>
-      )}
     </div>
   )
 }

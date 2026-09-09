@@ -34,7 +34,7 @@ export function useStepScroll(
     if (paused || count < 2) return
     const id = window.setTimeout(() => setIndex((i) => (i + 1) % count), dwell)
     return () => window.clearTimeout(id)
-  }, [index, paused, count, dwell])
+  }, [index, paused, count, dwell, resetKey])
 
   /**
    * Put the block at the top of the window, and where it is taller than the
@@ -47,9 +47,9 @@ export function useStepScroll(
   useEffect(() => {
     const el = ref.current
     const target = el?.children[0]?.children[index] as HTMLElement | undefined
-    if (!el || !target) return
+    if (!el || !target || paused) return
 
-    const top = target.offsetTop - el.offsetTop
+    const top = target.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop
     const overflow = Math.max(0, target.offsetHeight - el.clientHeight)
     el.scrollTo({ top, behavior: 'smooth' })
     if (!overflow || paused) return
@@ -68,7 +68,7 @@ export function useStepScroll(
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [index, paused, dwell])
+  }, [index, paused, dwell, resetKey])
 
   return { ref, index, paused, setPaused }
 }
@@ -107,6 +107,7 @@ export function useAutoScroll(
     let last = performance.now()
     let holdUntil = last + holdMs
     let offset = el.scrollTop
+    let atEnd = false
 
     const tick = (now: number) => {
       const dt = now - last
@@ -118,13 +119,18 @@ export function useAutoScroll(
         return
       }
 
-      offset += (pixelsPerSecond * dt) / 1000
-      if (offset >= limit) {
+      if (atEnd) {
         offset = 0
         el.scrollTop = 0
         holdUntil = now + holdMs
+        atEnd = false
       } else {
+        offset = Math.min(limit, offset + (pixelsPerSecond * dt) / 1000)
         el.scrollTop = offset
+        if (offset >= limit) {
+          atEnd = true
+          holdUntil = now + holdMs
+        }
       }
       frame = requestAnimationFrame(tick)
     }

@@ -1,3 +1,4 @@
+import { UiIcons } from './UiIcons'
 import { useQuery } from '@tanstack/react-query'
 import { nws } from '../lib/nws'
 import { PRIMARY_STATION, STATIONS_BY_ID } from '../lib/stations'
@@ -5,15 +6,15 @@ import {
   compass,
   fmt,
   hstDateTime,
+  hstTime,
   readPressureMb,
   readSpeed,
   readTemp,
   relativeAge,
 } from '../lib/units'
 import { useAlerts } from './AlertsDrawer'
-import { useAutoScroll } from '../lib/useAutoScroll'
+import { useAutoScroll, useStepScroll } from '../lib/useAutoScroll'
 import { parseAfd, synopsis } from '../lib/product'
-import { UiIcons } from './UiIcons'
 
 function Conditions() {
   const station = STATIONS_BY_ID.get(PRIMARY_STATION)!
@@ -77,32 +78,67 @@ function Conditions() {
   )
 }
 
-function Alerts() {
-  const { data } = useAlerts()
-  const alerts = data ?? []
-  if (!alerts.length) return null
+function Alerts({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading, isError } = useAlerts()
+  const severity = ['Extreme', 'Severe', 'Moderate', 'Minor', 'Unknown']
+  const alerts = [...(data ?? [])].sort((a, b) => severity.indexOf(a.severity) - severity.indexOf(b.severity))
+  const pairs = Array.from({ length: Math.ceil(alerts.length / 2) }, (_, i) => alerts.slice(i * 2, i * 2 + 2))
+  const scroll = useStepScroll(pairs.length, JSON.stringify(alerts))
 
   return (
-    <section className="border-b border-line pb-3">
-      <ul className="space-y-1">
-        {alerts.slice(0, 3).map((a) => (
-          <li key={a.id} className="flex items-baseline gap-2">
-            <span
-              aria-hidden="true"
-              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                a.severity === 'Extreme' || a.severity === 'Severe' ? 'bg-danger' : 'bg-warn'
-              }`}
-            />
-            <span className="min-w-0">
-              <span className="block text-base font-medium text-ink">{a.event}</span>
-              <span className="block truncate text-sm text-muted">{a.areaDesc}</span>
-            </span>
-          </li>
-        ))}
-        {alerts.length > 3 && (
-          <li className="text-sm text-faint">+{alerts.length - 3} more in effect</li>
-        )}
-      </ul>
+    <section aria-label="Active weather alerts" className="shrink-0 border-b border-line pb-2">
+      <button type="button" onClick={onOpen} className="mb-1 flex w-full items-baseline justify-between text-xs text-primary hover:underline">
+        <span className="font-semibold uppercase tracking-wide">
+          {alerts.length ? `${alerts.length} active alerts` : isLoading ? 'Checking alerts…' : isError ? 'Alerts unavailable' : 'No active alerts'}
+        </span>
+        {alerts.length > 0 && <span>View all →</span>}
+      </button>
+      {alerts.length > 0 && (
+        <div
+          ref={scroll.ref}
+          tabIndex={0}
+          aria-label="Scrolling active alerts"
+          onMouseEnter={() => scroll.setPaused(true)}
+          onMouseLeave={() => scroll.setPaused(false)}
+          onFocus={() => scroll.setPaused(true)}
+          onBlur={() => scroll.setPaused(false)}
+          className="h-[6.5rem] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div>
+            {pairs.map((pair) => (
+              <ul key={pair[0].id} className="grid h-[6.5rem] grid-rows-2 gap-1 pb-1">
+                {pair.map((a) => (
+                  <li key={a.id} className="min-h-0 min-w-0">
+                    <button
+                      type="button"
+                      onClick={onOpen}
+                      title={`${a.event} — ${a.areaDesc}`}
+                      className={`flex h-full w-full min-w-0 flex-col justify-center rounded border px-2 text-left transition-colors hover:bg-surface-hover ${
+                        a.severity === 'Extreme' || a.severity === 'Severe'
+                          ? 'border-danger/40 bg-danger-soft' : 'border-line bg-surface'
+                      }`}
+                    >
+                      <span className="flex w-full min-w-0 items-baseline gap-2">
+                        <span className={`min-w-0 flex-1 truncate text-sm font-semibold ${a.severity === 'Extreme' || a.severity === 'Severe' ? 'text-danger' : 'text-ink'}`}>
+                          {a.event}
+                        </span>
+                        <time
+                          dateTime={a.ends || a.expires}
+                          title={`${a.ends ? 'Until' : 'Expires'} ${hstDateTime(a.ends || a.expires)} HST`}
+                          className="shrink-0 whitespace-nowrap text-[10px] tabular-nums text-muted"
+                        >
+                          {a.ends ? 'Until' : 'Exp.'} {hstTime(a.ends || a.expires).replace(':00', '')} HST
+                        </time>
+                      </span>
+                      <span className="block w-full truncate text-xs text-muted">{a.areaDesc}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -118,19 +154,18 @@ function NextPeriods() {
   if (!data) return null
 
   return (
-    <section className="border-b border-line pb-3">
-      <ul className="space-y-1.5">
+    <section aria-label="Honolulu forecast" className="shrink-0 border-b border-line pb-2">
+      <ul className="space-y-1">
         {data.periods.slice(0, 2).map((p) => (
-          <li key={p.number} className="flex items-baseline gap-2">
-            <span className="w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-faint">
-              {p.name}
+          <li key={p.number} className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] items-baseline gap-x-2 text-xs leading-tight"
+            title={`${p.name}: ${p.temperature}°${p.temperatureUnit} · ${p.shortForecast}`}>
+            <span className="truncate font-medium text-faint">
+              {p.name.replace(/^This /, '')}
             </span>
-            <span className="min-w-0 text-sm text-muted">
-              <span className="font-medium text-ink">
-                {p.temperature}°{p.temperatureUnit}
-              </span>{' '}
-              {p.shortForecast}
+            <span className="font-medium tabular-nums text-ink">
+              {p.temperature}°{p.temperatureUnit}
             </span>
+            <span className="truncate text-muted">{p.shortForecast}</span>
           </li>
         ))}
       </ul>
@@ -147,15 +182,11 @@ function NextPeriods() {
  * forecaster's own reasoning — so someone stopping in the hallway can look at
  * the sky and then read what it means, without touching anything.
  */
-export default function DisplayRail({
-  onExit,
-  bare = false,
-  onToggleBare,
-}: {
-  onExit?: () => void
-  /** Controls hidden, imagery only. */
-  bare?: boolean
-  onToggleBare?: () => void
+export default function DisplayRail({ onOpenAlerts, bare, onToggleBare, onExit }: {
+  onOpenAlerts: () => void
+  bare: boolean
+  onToggleBare: () => void
+  onExit: () => void
 }) {
   const { data, dataUpdatedAt } = useQuery({
     queryKey: ['product', 'AFD', 'HFO'],
@@ -180,45 +211,25 @@ export default function DisplayRail({
   return (
     <aside
       aria-label="Current conditions and forecast discussion"
-      className="hidden w-80 shrink-0 flex-col gap-3 border-l border-line py-2 pl-4 pr-2 xl:flex xl:w-96"
+      className="display-reading-rail min-h-0 shrink-0 flex flex-col gap-2 border-l border-line py-2 px-3"
     >
-      {/* The way out lives here rather than floating over the imagery, where it
-          landed on the transport controls. */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-widest text-faint">
-          Display mode
-        </span>
-        <span className="flex items-center gap-1">
-          {onToggleBare && (
-            <button
-              type="button"
-              onClick={onToggleBare}
-              aria-pressed={bare}
-              aria-label={bare ? 'Show controls' : 'Hide controls'}
-              title={bare ? 'Show controls' : 'Hide controls — imagery only'}
-              className={`rounded border px-2 py-1 text-xs leading-none transition-colors hover:bg-surface-hover hover:text-ink ${
-                bare ? 'border-primary/50 text-primary' : 'border-line text-muted'
-              }`}
-            >
-              {bare ? 'Controls off' : 'Controls'}
-            </button>
-          )}
-          {onExit && (
-            <button
-              type="button"
-              onClick={onExit}
-              aria-label="Exit display mode (F)"
-              title="Exit display mode (F)"
-              className="rounded border border-line px-2 py-1 text-sm leading-none text-muted transition-colors hover:bg-surface-hover hover:text-ink"
-            >
-              <UiIcons.collapse size={16} />
-            </button>
-          )}
-        </span>
+      <div className="display-toolbar flex shrink-0 items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-widest text-faint">Display mode</span>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={onToggleBare}
+            aria-pressed={bare} aria-label={bare ? 'Show controls' : 'Hide controls'}
+            className="px-2 text-sm text-primary">
+            {bare ? 'Controls off' : 'Controls'}
+          </button>
+          <button type="button" onClick={onExit} aria-label="Exit display mode"
+            className="flex items-center justify-center px-2 text-sm text-ink">
+            <UiIcons.collapse size={18} />
+          </button>
+        </div>
       </div>
 
       <Conditions />
-      <Alerts />
+      <Alerts onOpen={onOpenAlerts} />
       <NextPeriods />
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -231,18 +242,15 @@ export default function DisplayRail({
           )}
         </div>
 
-        {/* Pinned, and sized to its own content: "always visible" means the whole
-            paragraph, not the top of it. The scrolling half takes what is left.
-            The cap is a backstop against a freak product eating the rail, set
-            well above any real synopsis rather than at a height that trims one. */}
+        {/* The complete synopsis stays fixed; only the discussion below moves. */}
         {pinned && (
-          <section className="max-h-[65%] shrink-0 overflow-y-auto border-b border-line pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <section aria-label="Forecast synopsis" className="shrink-0 border-b border-line pb-2">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-primary">
               {pinned.heading}
             </h3>
             {/* Bold, so the paragraph everything else is a gloss on is the one
                 the eye lands on from across the room. */}
-            <p className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-ink">
+            <p className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-snug text-ink">
               {pinned.body}
             </p>
           </section>
@@ -250,6 +258,10 @@ export default function DisplayRail({
 
         <div
           ref={scroll.ref}
+          tabIndex={0}
+          aria-label="Scrolling forecast discussion"
+          onFocus={() => scroll.setPaused(true)}
+          onBlur={() => scroll.setPaused(false)}
           onMouseEnter={() => scroll.setPaused(true)}
           onMouseLeave={() => scroll.setPaused(false)}
           className="min-h-0 flex-1 overflow-y-auto pr-1 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
