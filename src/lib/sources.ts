@@ -467,14 +467,9 @@ export const FEATURED_BANDS = SAT_BANDS.filter((b) => b.featured)
 
 /**
  * The 2×2's starting set, read top-left to bottom-right: mid-level water vapour
- * and the shortwave window above, visible and clean infrared below.
- *
- * Four questions rather than one asked four ways. The legacy site's combine view
- * stacked three water-vapour levels beside infrared, which is a fine way to read
- * moisture structure and a poor default — three of the four panels answer the
- * same question. Every panel is selectable from here, that set included.
+ * and Sandwich above, GeoColor and clean infrared below.
  */
-export const DEFAULT_PANEL_BANDS: SatBand[] = ['09', '07', '02', '13']
+export const DEFAULT_PANEL_BANDS: SatBand[] = ['09', 'Sandwich', 'GEOCOLOR', '13']
 
 /**
  * Loop lengths, as a count of frames rather than a span of hours.

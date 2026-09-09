@@ -79,8 +79,8 @@ export function useSharedSector(): [SatSector, (s: SatSector) => void] {
  * to you. The useful move on a fixed display is narrower: pick the four worth
  * watching side by side and leave them there. The set is shared between the
  * overview and the viewer's 2×2 so both show the same comparison, and persisted
- * so a display keeps it across a reboot. It starts on the legacy site's combine
- * set: the three water-vapour levels plus infrared.
+ * so a display keeps it across a reboot. It starts with WV mid and Sandwich
+ * above GeoColor and infrared.
  */
 export const DEFAULT_PANELS = DEFAULT_PANEL_BANDS
 
@@ -88,7 +88,11 @@ const isBand = (v: unknown): v is SatBand => SAT_BANDS.some((b) => b.id === v)
 
 const panelStore = store<SatBand[]>('weather-glass:panels', DEFAULT_PANELS, (raw) => {
   const v: unknown = JSON.parse(raw)
-  return Array.isArray(v) && v.length === 4 && v.every(isBand) ? (v as SatBand[]) : null
+  if (!Array.isArray(v) || v.length !== 4 || !v.every(isBand)) return null
+  // Existing displays may have persisted the previous starting set. Upgrade
+  // that set as well so Overview and its Watch it live link use the new default.
+  // Other saved comparisons retain their selected channels.
+  return v.join(',') === '09,07,02,13' ? DEFAULT_PANELS : v
 })
 
 export const setSharedPanels = panelStore.set
