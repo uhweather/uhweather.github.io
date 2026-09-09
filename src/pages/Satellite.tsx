@@ -401,11 +401,11 @@ export default function Satellite() {
           <div className="shrink-0 leading-tight">
             <p className="text-base font-medium tabular-nums text-ink">{coverage} loop</p>
             <p className="text-xs tabular-nums text-muted">
-              {frameGap} min steps · {frameCount ? index + 1 : 0} of {frameCount}
+              {frameGap} min steps · <span className="inline-block text-right" style={{ width: `${String(frameCount).length}ch` }}>{frameCount ? index + 1 : 0}</span> of {frameCount}
             </p>
             {active.stamp && (
-              <p className="text-xs font-medium tabular-nums text-ink">
-                {hstDateTime(active.stamp.toISOString())} HST
+              <p className="whitespace-nowrap font-mono text-xs font-medium tabular-nums text-ink">
+                {hstDateTime(active.stamp.toISOString(), true)} HST
               </p>
             )}
           </div>

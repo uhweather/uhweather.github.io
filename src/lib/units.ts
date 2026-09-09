@@ -91,13 +91,13 @@ export function hstTime(iso: string): string {
   })
 }
 
-export function hstDateTime(iso: string): string {
+export function hstDateTime(iso: string, padDigits = false): string {
   return new Date(iso).toLocaleString('en-US', {
     timeZone: HST,
     weekday: 'short',
     month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
+    day: padDigits ? '2-digit' : 'numeric',
+    hour: padDigits ? '2-digit' : 'numeric',
     minute: '2-digit',
   })
 }
