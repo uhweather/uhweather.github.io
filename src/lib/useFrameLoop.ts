@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+
+const EMPTY_FRAMES: string[] = []
+const LAST_FRAME_HOLD_MS = 2000
 import {
   frameCandidates,
   frameKey,
@@ -14,9 +17,8 @@ import {
  *
  * Frame names are derived from the clock, so a name may point at a scan that was
  * never published. Loading is the existence check: anything that errors is left
- * out, and playback runs on what remains. Decoding the loop up front is also
- * what stops playback flickering, since swapping `src` on an uncached frame
- * shows a gap.
+ * out, and playback runs on what remains. Preloading warms the browser cache;
+ * the browser owns decoded-image eviction when memory is tight.
  *
  * The loop is replaced in one go, when the whole new set is in. The refresh
  * clock hands over a fresh list of names every cadence, and swapping frame by
@@ -31,45 +33,74 @@ function usePreloadedFrames(urls: string[], series: string) {
   const [progress, setProgress] = useState({ loaded: 0, total: urls.length })
   const [ok, setOk] = useState<string[]>([])
   const shown = useRef(series)
+  const available = useRef(new Set<string>())
 
   useEffect(() => {
     if (shown.current !== series) {
       shown.current = series
       setOk([])
+      available.current.clear()
     }
 
     if (!urls.length) {
+      available.current.clear()
       setOk([])
       setProgress({ loaded: 0, total: 0 })
       return
     }
 
     let cancelled = false
-    let done = 0
-    const good = new Set<string>()
-    setProgress({ loaded: 0, total: urls.length })
-
-    const imgs = urls.map((u) => {
-      const img = new Image()
-      const tick = (exists: boolean) => {
-        if (cancelled) return
-        done += 1
-        if (exists) good.add(u)
-        setProgress({ loaded: done, total: urls.length })
-        if (done === urls.length) setOk(urls.filter((x) => good.has(x)))
+    let next = 0
+    const good = new Set(urls.filter((u) => available.current.has(u)))
+    const pending = urls.filter((u) => !good.has(u))
+    let done = good.size
+    const active = new Set<() => void>()
+    const report = () => {
+      setProgress({ loaded: done, total: urls.length })
+      if (done === urls.length) {
+        // Bound bookkeeping to this generation; never accumulate image history.
+        available.current = good
+        setOk(urls.filter((u) => good.has(u)))
       }
-      img.onload = () => tick(true)
-      img.onerror = () => tick(false)
-      img.src = u
-      return img
-    })
+    }
+    report()
+
+    // Limit simultaneous requests and release image handlers as each settles.
+    // Immutable satellite URLs already loaded need no new preload on refresh.
+    const pump = () => {
+      while (!cancelled && active.size < 4 && next < pending.length) {
+        const u = pending[next++]
+        const img = new Image()
+        let settled = false
+        const release = () => {
+          window.clearTimeout(timeout)
+          img.onload = null
+          img.onerror = null
+          img.removeAttribute('src')
+          active.delete(release)
+        }
+        const tick = (exists: boolean) => {
+          if (cancelled || settled) return
+          settled = true
+          release()
+          done += 1
+          if (exists) good.add(u)
+          report()
+          pump()
+        }
+        // A hung request must not prevent all other frames from becoming ready.
+        const timeout = window.setTimeout(() => tick(false), 20_000)
+        active.add(release)
+        img.onload = () => tick(true)
+        img.onerror = () => tick(false)
+        img.src = u
+      }
+    }
+    pump()
 
     return () => {
       cancelled = true
-      imgs.forEach((i) => {
-        i.onload = null
-        i.onerror = null
-      })
+      active.forEach((release) => release())
     }
   }, [urls, series])
 
@@ -105,20 +136,19 @@ export function useNow(cadenceMinutes: number) {
 function usePlayback(frames: string[], speed: number, enabled: boolean) {
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(true)
-  const timer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     if (frames.length) setIndex(frames.length - 1)
   }, [frames])
 
   useEffect(() => {
-    if (!playing || !enabled || !frames.length) return
-    timer.current = window.setInterval(
+    if (!playing || !enabled || frames.length < 2) return
+    const timer = window.setTimeout(
       () => setIndex((i) => (i + 1) % frames.length),
-      speed,
+      index >= frames.length - 1 ? Math.max(speed, LAST_FRAME_HOLD_MS) : speed,
     )
-    return () => window.clearInterval(timer.current)
-  }, [playing, speed, enabled, frames])
+    return () => window.clearTimeout(timer)
+  }, [index, playing, speed, enabled, frames])
 
   const jump = (to: number) => {
     setPlaying(false)
@@ -294,7 +324,7 @@ export function useRadarLoop({
       ),
     [site, generation],
   )
-  const { loaded, ready, ok, total } = usePreloadedFrames(enabled ? urls : [], site)
+  const { loaded, ready, ok, total } = usePreloadedFrames(enabled ? urls : EMPTY_FRAMES, site)
   const { index, playing, setPlaying, jump } = usePlayback(ok, speed, enabled)
   return {
     frames: ok,

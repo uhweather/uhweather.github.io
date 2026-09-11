@@ -399,12 +399,12 @@ export default function Satellite() {
       <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-8 gap-y-2">
         {(animate || combine) && (
           <div className="shrink-0 leading-tight">
-            <p className="text-base font-medium tabular-nums text-ink">{coverage} loop</p>
+            <p className="text-xs tabular-nums text-muted">{coverage} loop</p>
             <p className="text-xs tabular-nums text-muted">
               {frameGap} min steps · <span className="inline-block text-right" style={{ width: `${String(frameCount).length}ch` }}>{frameCount ? index + 1 : 0}</span> of {frameCount}
             </p>
             {active.stamp && (
-              <p className="whitespace-nowrap font-mono text-xs font-medium tabular-nums text-ink">
+              <p className="whitespace-nowrap font-mono text-sm font-bold tabular-nums text-ink">
                 {hstDateTime(active.stamp.toISOString(), true)} HST
               </p>
             )}
