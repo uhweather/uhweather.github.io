@@ -69,7 +69,7 @@ function harness(name) {
 const playback = harness('usePlayback')
 const frames = ['a', 'b', 'c']
 assert.equal(playback.render(frames, 300, true).index, 2)
-assert.equal(playback.advance(1999).index, 2)
+assert.equal(playback.advance(999).index, 2)
 assert.equal(playback.advance(1).index, 0)
 assert.equal(playback.advance(300).index, 1)
 assert.equal(playback.advance(300).index, 2)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const EMPTY_FRAMES: string[] = []
-const LAST_FRAME_HOLD_MS = 2000
+const LAST_FRAME_HOLD_MS = 1000
 import {
   frameCandidates,
   frameKey,
