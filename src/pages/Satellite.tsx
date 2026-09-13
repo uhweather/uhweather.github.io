@@ -1,3 +1,4 @@
+import SynchronizedFrames from '../components/SynchronizedFrames'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -343,7 +344,7 @@ export default function Satellite() {
              and letting its width follow its height spends the panel on picture
              instead of on black bars either side. */
           <div className="absolute inset-0 flex items-center justify-center">
-            <div
+            <SynchronizedFrames urls={grid.urls} onBuffering={grid.setBuffering}
               className="grid h-full max-w-full grid-cols-2 grid-rows-2 gap-1.5"
               style={{ aspectRatio: String(spec.aspect) }}
             >
@@ -352,9 +353,9 @@ export default function Satellite() {
                 key={`${b}-${i}`}
                 className="relative min-h-0 overflow-hidden rounded border border-line bg-black"
               >
-                <img
-                  src={grid.urls?.[i] ?? ''}
-                  alt={`${bandSpec(b).label} over ${spec.label}`}
+                <canvas
+                  role="img"
+                  aria-label={`${bandSpec(b).label} over ${spec.label}`}
                   className="absolute inset-0 h-full w-full object-contain"
                 />
                 <button
@@ -366,7 +367,7 @@ export default function Satellite() {
                 <PanelChannel value={b} onChange={(next) => setPanel(i, next)} />
               </div>
             ))}
-            </div>
+            </SynchronizedFrames>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

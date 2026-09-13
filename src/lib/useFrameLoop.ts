@@ -16,7 +16,7 @@ import {
  * Preload frames, reporting which ones actually exist.
  *
  * Frame names are derived from the clock, so a name may point at a scan that was
- * never published. Loading is the existence check: anything that errors is left
+ * never published. Requests get three attempts before a failed scan is left
  * out, and playback runs on what remains. Preloading warms the browser cache;
  * the browser owns decoded-image eviction when memory is tight.
  *
@@ -51,6 +51,7 @@ function usePreloadedFrames(urls: string[], series: string) {
 
     let cancelled = false
     let next = 0
+    const attempts = new Map<string, number>()
     const good = new Set(urls.filter((u) => available.current.has(u)))
     const pending = urls.filter((u) => !good.has(u))
     let done = good.size
@@ -68,8 +69,9 @@ function usePreloadedFrames(urls: string[], series: string) {
     // Limit simultaneous requests and release image handlers as each settles.
     // Immutable satellite URLs already loaded need no new preload on refresh.
     const pump = () => {
-      while (!cancelled && active.size < 4 && next < pending.length) {
+      while (!cancelled && active.size < 2 && next < pending.length) {
         const u = pending[next++]
+        attempts.set(u, (attempts.get(u) ?? 0) + 1)
         const img = new Image()
         let settled = false
         const release = () => {
@@ -83,13 +85,18 @@ function usePreloadedFrames(urls: string[], series: string) {
           if (cancelled || settled) return
           settled = true
           release()
+          if (!exists && attempts.get(u)! < 3) {
+            pending.push(u)
+            pump()
+            return
+          }
           done += 1
           if (exists) good.add(u)
           report()
           pump()
         }
         // A hung request must not prevent all other frames from becoming ready.
-        const timeout = window.setTimeout(() => tick(false), 20_000)
+        const timeout = window.setTimeout(() => tick(false), 45_000)
         active.add(release)
         img.onload = () => tick(true)
         img.onerror = () => tick(false)
@@ -271,7 +278,8 @@ export function useCombinedLoop({
   }, [ok, sector, bandsKey, frameCount, step, quality, now])
 
   const keys = useMemo(() => sets.map((s) => s.key), [sets])
-  const { index, playing, setPlaying, jump } = usePlayback(keys, speed, enabled)
+  const [buffering, setBuffering] = useState(false)
+  const { index, playing, setPlaying, jump } = usePlayback(keys, speed, enabled && !buffering)
 
   const currentSet = sets.length ? sets[Math.min(index, sets.length - 1)] : null
   const empty = ready && sets.length === 0
@@ -282,6 +290,7 @@ export function useCombinedLoop({
     playing,
     setPlaying,
     urls: currentSet?.urls ?? null,
+    setBuffering,
     stamp: currentSet ? parseFrameTime(`${currentSet.key}_`) : null,
     ready: sets.length > 0,
     loaded,
