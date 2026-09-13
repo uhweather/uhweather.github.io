@@ -54,16 +54,20 @@ function usePreloadedFrames(urls: string[], series: string) {
     const attempts = new Map<string, number>()
     const checked = new Set(urls.filter((u) => available.current.has(u)))
     let publishedFirstPass = false
+    const initialLoad = available.current.size === 0
+    let publishedSize = -1
     const good = new Set(urls.filter((u) => available.current.has(u)))
     const pending = urls.filter((u) => !good.has(u))
     let done = good.size
     const active = new Set<() => void>()
     const report = () => {
       setProgress({ loaded: done, total: urls.length })
-      if (done === urls.length || (!publishedFirstPass && checked.size === urls.length)) {
-        publishedFirstPass = true
-        // Publish the first pass without waiting for retries; replace it once
-        // recovery finishes. Keep the previous generation during refresh.
+      if ((initialLoad && good.size !== publishedSize) || done === urls.length ||
+          (!publishedFirstPass && checked.size === urls.length)) {
+        publishedSize = good.size
+        publishedFirstPass = checked.size === urls.length
+        // Initial playback can start with complete scans while history loads.
+        // Refreshes keep their previous generation until the first pass ends.
         available.current = good
         setOk(urls.filter((u) => good.has(u)))
       }
@@ -146,22 +150,39 @@ export function useNow(cadenceMinutes: number) {
 }
 
 /** Playback over a list of frames. */
-function usePlayback(frames: string[], speed: number, enabled: boolean) {
+function usePlayback(
+  frames: string[], speed: number, enabled: boolean,
+  startAtFirst = false, resetKey = "", waiting = false,
+) {
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(true)
 
+  const previousFrames = useRef<string[]>([])
+  const previousKey = useRef(resetKey)
   useEffect(() => {
-    if (frames.length) setIndex(frames.length - 1)
-  }, [frames])
+    const previous = previousFrames.current
+    const changed = previousKey.current !== resetKey
+    previousKey.current = resetKey
+    previousFrames.current = frames
+    if (!frames.length) {
+      setIndex(0)
+      return
+    }
+    setIndex((current) => {
+      const retained = frames.indexOf(previous[current])
+      if (startAtFirst && (changed || waiting || !previous.length)) return 0
+      return retained >= 0 ? retained : (startAtFirst ? 0 : frames.length - 1)
+    })
+  }, [frames, startAtFirst, resetKey, waiting])
 
   useEffect(() => {
-    if (!playing || !enabled || frames.length < 2) return
+    if (!playing || !enabled || waiting || frames.length < 2) return
     const timer = window.setTimeout(
       () => setIndex((i) => (i + 1) % frames.length),
       index >= frames.length - 1 ? Math.max(speed, LAST_FRAME_HOLD_MS) : speed,
     )
     return () => window.clearTimeout(timer)
-  }, [index, playing, speed, enabled, frames])
+  }, [index, playing, speed, enabled, frames, waiting])
 
   const jump = (to: number) => {
     setPlaying(false)
@@ -202,7 +223,9 @@ export function useFrameLoop({
     candidates,
     `${sector}/${band}/${quality}/${frameCount}/${step}`,
   )
-  const { index, playing, setPlaying, jump } = usePlayback(ok, speed, enabled)
+  const { index, playing, setPlaying, jump } = usePlayback(
+    ok, speed, enabled, true, `${sector}/${band}/${quality}/${frameCount}/${step}`, settling,
+  )
 
   const current = ok.length ? ok[Math.min(index, ok.length - 1)] : null
   const empty = !ready && !settling && total > 0
@@ -255,15 +278,22 @@ export function useCombinedLoop({
   const candidates = useMemo(
     () =>
       enabled
-        ? bands.flatMap((b) =>
-            frameCandidates(sector, b, { frames: frameCount, step, quality, now }),
-          )
+        ? (() => {
+            const perBand = bands.map((b) =>
+              frameCandidates(sector, b, { frames: frameCount, step, quality, now }),
+            )
+            // Request all channels of one timestamp together, oldest first.
+            // This produces a usable comparison before the full history loads.
+            return (perBand[0] ?? []).flatMap((_, i) =>
+              perBand.map((urls) => urls[i]),
+            )
+          })()
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sector, bandsKey, frameCount, step, quality, enabled, now],
   )
 
-  const { loaded, ready, ok, total, settling } = usePreloadedFrames(
+  const { loaded, ok, total, settling } = usePreloadedFrames(
     candidates,
     `${sector}/${bandsKey}/${quality}/${frameCount}/${step}`,
   )
@@ -283,19 +313,28 @@ export function useCombinedLoop({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ok, sector, bandsKey, frameCount, step, quality, now])
 
-  const keys = useMemo(() => sets.map((s) => s.key), [sets])
+  const setKeys = sets.map((s) => s.key).join(",")
+  const keys = useMemo(() => setKeys ? setKeys.split(",") : [], [setKeys])
   const [buffering, setBuffering] = useState(false)
-  const { index, playing, setPlaying, jump } = usePlayback(keys, speed, enabled && !buffering)
+  const { index, playing, setPlaying, jump } = usePlayback(
+    keys, speed, enabled && !buffering, true,
+    `${sector}/${bandsKey}/${quality}/${frameCount}/${step}`, settling,
+  )
 
   const currentSet = sets.length ? sets[Math.min(index, sets.length - 1)] : null
-  const empty = ready && sets.length === 0
+  const currentUrlsKey = currentSet?.urls.join("\n") ?? ""
+  const currentUrls = useMemo(
+    () => currentUrlsKey ? currentUrlsKey.split("\n") : null,
+    [currentUrlsKey],
+  )
+  const empty = !settling && total > 0 && sets.length === 0
   return {
     sets,
     index,
     jump,
     playing,
     setPlaying,
-    urls: currentSet?.urls ?? null,
+    urls: currentUrls,
     setBuffering,
     stamp: currentSet ? parseFrameTime(`${currentSet.key}_`) : null,
     ready: sets.length > 0,

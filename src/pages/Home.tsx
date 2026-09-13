@@ -158,7 +158,10 @@ export default function Home() {
   // browser would happily show yesterday's frame forever. Ticking a token at the
   // imagery cadence is what makes an unattended display current — no reload, no
   // refresh button, and it keeps running in a background tab.
-  const generation = useNow(spec.cadenceMinutes)
+  const now = useNow(spec.cadenceMinutes)
+  // Reuse cached latest images when reopening within the same scan interval.
+  const cadenceMs = spec.cadenceMinutes * 60_000
+  const generation = Math.floor(now / cadenceMs) * cadenceMs
 
   // Which panel is open full screen, and the rectangle it grew out of.
   const [focus, setFocus] = useState<{ panel: number; origin: DOMRect } | null>(null)
@@ -207,6 +210,9 @@ export default function Home() {
                 <img
                   src={`${satellitePanelUrl(sector, b)}?_=${generation}`}
                   alt={`Latest ${bandSpec(b).label} imagery of the ${spec.label} sector`}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="absolute inset-0 h-full w-full object-contain"
                 />
                 <button
