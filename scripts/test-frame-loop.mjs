@@ -49,6 +49,7 @@ function harness(name) {
     },
     Image: class {
       constructor() { images.push(this) }
+      decode() { this.decoded = true; return { then(resolve) { resolve() } } }
       removeAttribute() { this.src = '' }
     },
   }
@@ -82,7 +83,7 @@ function harness(name) {
 const playback = harness('usePlayback')
 const frames = ['a', 'b', 'c']
 assert.equal(playback.render(frames, 300, true).index, 2)
-assert.equal(playback.advance(999).index, 2)
+assert.equal(playback.advance(1199).index, 2)
 assert.equal(playback.advance(1).index, 0)
 assert.equal(playback.advance(300).index, 1)
 assert.equal(playback.advance(300).index, 2)
@@ -96,7 +97,7 @@ playback.unmount()
 const growing = harness('usePlayback')
 const initial = ['b', 'c']
 growing.render(initial, 300, true)
-growing.advance(1000)
+growing.advance(1200)
 assert.equal(growing.render().index, 0)
 growing.render(['a', 'b', 'c'], 300, true)
 assert.equal(growing.render().index, 1, 'history growth retains the displayed timestamp')
@@ -104,7 +105,7 @@ assert.equal(growing.advance(300).index, 2, 'playback continues after history gr
 growing.unmount()
 
 const combined = harness('useCombinedLoop')
-const options = { sector: 'test', bands: ['a', 'b'], enabled: true, frames: 3 }
+const options = { sector: 'test', bands: ['a', 'b'], enabled: true, frames: 3, speed: 300 }
 combined.render(options)
 assert.equal(combined.images[0].src, 'a-1')
 assert.equal(combined.images[1].src, 'b-1', 'oldest matching channels requested first')
@@ -167,7 +168,9 @@ assert.equal(preload.images.length, 5)
 for (let i = 1; i < preload.images.length; i++) preload.images[i].onload()
 assert.equal(preload.render().ok.join(','), 'a,b,c,d,e')
 assert.equal(preload.timers.size, 0)
-assert.ok(preload.images.every((img) => img.onload === null && img.src === ''))
+assert.ok(preload.images.every((img) => img.decoded), 'images decode before publication')
+assert.ok(preload.images.every((img) => img.onload === null && img.src !== ''), 'prepared images retain their source for playback')
+assert.equal(preload.render().images.get('a'), preload.images[0], 'playback reuses the prepared image')
 preload.render(['b', 'c', 'd', 'e', 'f'], 'sat')
 assert.equal(preload.images.length, 6, 'only the new frame is requested')
 preload.images[5].onload()
@@ -180,4 +183,65 @@ preload.render(['z'], 'other')
 preload.unmount()
 assert.equal(preload.timers.size, 0)
 assert.equal(preload.images.at(-1).onload, null)
-console.log('Frame loop checks passed: last-frame hold, pause, disable, bounded loading, reuse, timeout, cleanup.')
+const noaaTiming = harness('usePlayback')
+noaaTiming.render(['a', 'b', 'c'], 75, true, true)
+assert.equal(noaaTiming.render().index, 0)
+assert.equal(noaaTiming.advance(74).index, 0)
+assert.equal(noaaTiming.advance(1).index, 1)
+assert.equal(noaaTiming.advance(75).index, 2)
+assert.equal(noaaTiming.advance(1199).index, 2)
+assert.equal(noaaTiming.advance(1).index, 0)
+noaaTiming.unmount()
+
+// Exercise the real drawing component: no Image creation or decode during playback.
+const drawSource = fs.readFileSync('src/components/SynchronizedFrames.tsx', 'utf8')
+  .replace(/^import .* from 'react'\n/, '')
+  .replace('export default ', '')
+const drawJs = ts.transpileModule(drawSource, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React },
+}).outputText
+const events = [], overlays = [], refs = [], drawingEffects = []
+let refCursor = 0, cleanup
+function canvas(name) {
+  return {
+    name, width: 300, height: 150, clientWidth: 300, className: 'panel', dataset: {},
+    getContext() { return { drawImage(image) { events.push(`draw:${name}:${image.name}`) } } },
+    setAttribute() {}, after() {}, remove() { this.removed = true },
+    animate(frames, options) {
+      events.push(`fade:${options.duration}`)
+      return { cancel() {}, onfinish: null }
+    },
+  }
+}
+const canvases = [canvas('left'), canvas('right')]
+const root = { querySelectorAll() { return canvases } }
+const drawing = {
+  window: { devicePixelRatio: 1 },
+  document: { createElement() { const overlay = canvas('overlay'); overlays.push(overlay); return overlay } },
+  React: { createElement(type, props) { props.ref.current = root; return props } },
+  useRef(value) { return refs[refCursor++] ??= { current: value } },
+  useLayoutEffect(effect) { drawingEffects.push(effect) },
+}
+vm.createContext(drawing)
+vm.runInContext(drawJs + '\nglobalThis.component = SynchronizedFrames', drawing)
+const image = (name) => ({ name, naturalWidth: 1800, naturalHeight: 1080 })
+const preparedImages = new Map(['a', 'b', 'c', 'd'].map((name) => [name, image(name)]))
+function draw(urls) {
+  cleanup?.(); refCursor = 0
+  drawing.component({ urls, images: preparedImages, fadeMs: 25 })
+  cleanup = drawingEffects.shift()()
+}
+draw(['a', 'b'])
+assert.deepEqual(events, ['draw:left:a', 'draw:right:b'])
+events.length = 0
+draw(['c', 'd'])
+assert.equal(events.indexOf('fade:25') > events.indexOf('draw:right:d'), true,
+  'all channels draw before fades start')
+assert.equal(events.filter((event) => event === 'fade:25').length, 2)
+assert.equal(canvases[0].width, 300, 'display-sized canvases avoid full-resolution copies')
+cleanup?.()
+assert.ok(overlays.every((overlay) => overlay.removed), 'fade overlays are released')
+events.length = 0
+draw(['missing', 'd'])
+assert.equal(events.length, 0, 'incomplete scan never replaces a complete scan')
+console.log('Frame checks passed: prepared-image reuse, synchronized fades, NOAA timing, first-frame hold, retries, and cleanup.')

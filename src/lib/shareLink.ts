@@ -40,9 +40,9 @@ export const DEFAULT_VIEW: SatelliteView = {
   combine: false,
   band: 'GEOCOLOR',
   panels: DEFAULT_PANELS,
-  frames: 36,
+  frames: 24,
   step: 1,
-  speed: 150,
+  speed: 75,
   quality: 'small',
   animate: true,
 }
@@ -70,7 +70,7 @@ export function readView(params: URLSearchParams, base: SatelliteView): Satellit
     panels: panels?.length === 4 ? panels : base.panels,
     frames: (FRAME_COUNTS as readonly number[]).includes(frames) ? frames : base.frames,
     step: (STEPS as readonly number[]).includes(step) ? step : base.step,
-    speed: speed >= 40 && speed <= 2000 ? speed : base.speed,
+    speed: speed >= 20 && speed <= 2000 ? speed : base.speed,
     quality: quality === 'large' || quality === 'small' ? quality : base.quality,
     animate: mode === 'still' ? false : mode === 'anim' ? true : base.animate,
   }

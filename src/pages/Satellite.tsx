@@ -39,11 +39,14 @@ import Rail from '../components/Rail'
 import { UiIcons } from '../components/UiIcons'
 import { hstDateTime } from '../lib/units'
 
+// Multipliers relative to NOAA's 75 ms default frame interval.
 const SPEEDS = [
-  { ms: 600, label: '0.5×' },
-  { ms: 300, label: '1×' },
-  { ms: 150, label: '2×' },
-  { ms: 80, label: '4×' },
+  { ms: 300, label: '0.25×' },
+  { ms: 150, label: '0.5×' },
+  { ms: 100, label: '0.75×' },
+  { ms: 75, label: '1×' },
+  { ms: 50, label: '1.5×' },
+  { ms: 37.5, label: '2×' },
 ]
 
 /** Minutes as the span a loop covers: "90 min", "6 h", "1 d 12 h". */
@@ -310,7 +313,8 @@ export default function Satellite() {
           figure's own ratio on a phone and from `flex-1` once the page fills the
           window; `overflow-hidden` is load-bearing either way, since without it
           a wide sector spills out and covers the controls. */}
-      <div className="sat-stage relative w-full overflow-hidden lg:min-h-0 lg:flex-1">
+      <div className="sat-stage relative w-full overflow-hidden lg:min-h-0 lg:flex-1"
+        aria-busy={(animate || combine) && active.settling}>
         {active.isError ? (
           <div className="absolute inset-0 grid place-items-center">
             <ErrorState
@@ -344,7 +348,7 @@ export default function Satellite() {
              and letting its width follow its height spends the panel on picture
              instead of on black bars either side. */
           <div className="absolute inset-0 flex items-center justify-center">
-            <SynchronizedFrames urls={grid.urls} onBuffering={grid.setBuffering}
+            <SynchronizedFrames urls={grid.urls} images={grid.images} fadeMs={Math.min(25, speed / 3)}
               className="grid h-full max-w-full grid-cols-2 grid-rows-2 gap-1.5"
               style={{ aspectRatio: String(spec.aspect) }}
             >
@@ -371,26 +375,26 @@ export default function Satellite() {
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div
+            <SynchronizedFrames urls={animate && loop.current ? [loop.current] : null}
+              images={loop.images} fadeMs={Math.min(25, speed / 3)}
               className="relative max-h-full w-full overflow-hidden"
               style={{ aspectRatio: String(spec.aspect) }}
             >
-              <img
-                src={animate ? (loop.current ?? stillUrl) : stillUrl}
-                alt={
-                  animate
-                    ? `${meta.label} imagery of the ${spec.label} sector, frame ${index + 1} of ${frameCount}`
-                    : `Latest ${meta.label} imagery of the ${spec.label} sector`
-                }
-                className="absolute inset-0 h-full w-full object-contain"
-              />
+              {animate ? (
+                <canvas role="img"
+                  aria-label={`${meta.label} imagery of the ${spec.label} sector, frame ${index + 1} of ${frameCount}`}
+                  className="absolute inset-0 h-full w-full object-contain" />
+              ) : (
+                <img src={stillUrl} alt={`Latest ${meta.label} imagery of the ${spec.label} sector`}
+                  className="absolute inset-0 h-full w-full object-contain" />
+              )}
               <button
                 type="button"
                 onClick={enlarge(null)}
                 aria-label={`Enlarge ${meta.label}`}
                 className="absolute inset-0 cursor-zoom-in"
               />
-            </div>
+            </SynchronizedFrames>
           </div>
         )}
       </div>
@@ -446,7 +450,16 @@ export default function Satellite() {
             </button>
           </div>
 
-          <label className="flex min-w-40 flex-1 items-center gap-2">
+          <div className="relative min-w-40 flex-1 pt-4" aria-busy={active.settling}>
+            {active.settling && (
+              <div role="status" aria-live="polite"
+                className="pointer-events-none absolute right-0 top-0 flex items-center gap-1.5 text-xs tabular-nums text-muted">
+                <span aria-hidden="true"
+                  className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-primary motion-reduce:animate-none" />
+                <span>Preparing frames… {active.loaded}/{active.total}</span>
+              </div>
+            )}
+          <label className="flex items-center gap-2">
             <span className="sr-only">Frame</span>
             <input
               type="range"
@@ -460,6 +473,7 @@ export default function Satellite() {
               {frameCount ? index + 1 : 0}/{frameCount}
             </span>
           </label>
+          </div>
 
           {/* `lg:contents` dissolves this wrapper where the row has the width for
               everything on one line, leaving the desktop layout untouched. */}

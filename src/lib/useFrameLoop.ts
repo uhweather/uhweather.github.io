@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const EMPTY_FRAMES: string[] = []
-const LAST_FRAME_HOLD_MS = 1000
+const LAST_FRAME_HOLD_MS = 1200
 import {
   frameCandidates,
   frameKey,
@@ -34,19 +34,37 @@ function usePreloadedFrames(urls: string[], series: string) {
   const [ok, setOk] = useState<string[]>([])
   const shown = useRef(series)
   const available = useRef(new Set<string>())
+  const prepared = useRef(new Map<string, HTMLImageElement>())
+
+  useEffect(() => () => {
+    prepared.current.forEach((image) => image.removeAttribute('src'))
+    prepared.current.clear()
+    available.current.clear()
+  }, [])
 
   useEffect(() => {
     if (shown.current !== series) {
       shown.current = series
       setOk([])
       available.current.clear()
+      prepared.current.forEach((image) => image.removeAttribute("src"))
+      prepared.current.clear()
     }
 
     if (!urls.length) {
       available.current.clear()
+      prepared.current.forEach((image) => image.removeAttribute("src"))
+      prepared.current.clear()
       setOk([])
       setProgress({ loaded: 0, total: 0 })
       return
+    }
+
+    for (const [url, image] of prepared.current) {
+      if (!urls.includes(url)) {
+        image.removeAttribute("src")
+        prepared.current.delete(url)
+      }
     }
 
     let cancelled = false
@@ -82,17 +100,17 @@ function usePreloadedFrames(urls: string[], series: string) {
         attempts.set(u, (attempts.get(u) ?? 0) + 1)
         const img = new Image()
         let settled = false
-        const release = () => {
+        const release = (retain = false) => {
           window.clearTimeout(timeout)
           img.onload = null
           img.onerror = null
-          img.removeAttribute('src')
+          if (!retain) img.removeAttribute('src')
           active.delete(release)
         }
         const tick = (exists: boolean) => {
           if (cancelled || settled) return
           settled = true
-          release()
+          release(exists)
           checked.add(u)
           if (!exists && attempts.get(u)! < 3) {
             pending.push(u)
@@ -101,14 +119,20 @@ function usePreloadedFrames(urls: string[], series: string) {
             return
           }
           done += 1
-          if (exists) good.add(u)
+          if (exists) {
+            good.add(u)
+            prepared.current.set(u, img)
+          }
           report()
           pump()
         }
         // A hung request must not prevent all other frames from becoming ready.
         const timeout = window.setTimeout(() => tick(false), 20_000)
         active.add(release)
-        img.onload = () => tick(true)
+        img.onload = () => {
+          if (img.decode) img.decode().then(() => tick(true), () => tick(false))
+          else tick(true)
+        }
         img.onerror = () => tick(false)
         img.src = u
       }
@@ -123,6 +147,7 @@ function usePreloadedFrames(urls: string[], series: string) {
 
   return {
     ok,
+    images: prepared.current,
     loaded: progress.loaded,
     total: progress.total,
     ready: ok.length > 0,
@@ -198,7 +223,7 @@ export function useFrameLoop({
   band,
   frames: frameCount = 24,
   step = 1,
-  speed = 300,
+  speed = 75,
   quality = 'small',
   enabled = true,
 }: {
@@ -219,7 +244,7 @@ export function useFrameLoop({
         : [],
     [sector, band, frameCount, step, quality, enabled, now],
   )
-  const { loaded, ready, ok, total, settling } = usePreloadedFrames(
+  const { loaded, ready, ok, total, settling, images } = usePreloadedFrames(
     candidates,
     `${sector}/${band}/${quality}/${frameCount}/${step}`,
   )
@@ -231,6 +256,7 @@ export function useFrameLoop({
   const empty = !ready && !settling && total > 0
   return {
     frames: ok,
+    images,
     index,
     playing,
     setPlaying,
@@ -240,6 +266,7 @@ export function useFrameLoop({
     ready,
     loaded,
     total,
+    settling,
     isLoading: !ready && settling,
     isError: empty,
     error: empty ? new Error('No frames published for this product yet.') : null,
@@ -260,7 +287,7 @@ export function useCombinedLoop({
   bands,
   frames: frameCount = 24,
   step = 1,
-  speed = 300,
+  speed = 75,
   quality = 'small',
   enabled = true,
 }: {
@@ -293,7 +320,7 @@ export function useCombinedLoop({
     [sector, bandsKey, frameCount, step, quality, enabled, now],
   )
 
-  const { loaded, ok, total, settling } = usePreloadedFrames(
+  const { loaded, ok, total, settling, images } = usePreloadedFrames(
     candidates,
     `${sector}/${bandsKey}/${quality}/${frameCount}/${step}`,
   )
@@ -330,6 +357,7 @@ export function useCombinedLoop({
   const empty = !settling && total > 0 && sets.length === 0
   return {
     sets,
+    images,
     index,
     jump,
     playing,
@@ -340,6 +368,7 @@ export function useCombinedLoop({
     ready: sets.length > 0,
     loaded,
     total,
+    settling,
     isLoading: sets.length === 0 && settling,
     isError: empty,
     error: empty ? new Error('No frames published for these channels yet.') : null,
