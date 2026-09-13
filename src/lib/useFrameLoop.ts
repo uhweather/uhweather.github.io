@@ -52,14 +52,18 @@ function usePreloadedFrames(urls: string[], series: string) {
     let cancelled = false
     let next = 0
     const attempts = new Map<string, number>()
+    const checked = new Set(urls.filter((u) => available.current.has(u)))
+    let publishedFirstPass = false
     const good = new Set(urls.filter((u) => available.current.has(u)))
     const pending = urls.filter((u) => !good.has(u))
     let done = good.size
     const active = new Set<() => void>()
     const report = () => {
       setProgress({ loaded: done, total: urls.length })
-      if (done === urls.length) {
-        // Bound bookkeeping to this generation; never accumulate image history.
+      if (done === urls.length || (!publishedFirstPass && checked.size === urls.length)) {
+        publishedFirstPass = true
+        // Publish the first pass without waiting for retries; replace it once
+        // recovery finishes. Keep the previous generation during refresh.
         available.current = good
         setOk(urls.filter((u) => good.has(u)))
       }
@@ -69,7 +73,7 @@ function usePreloadedFrames(urls: string[], series: string) {
     // Limit simultaneous requests and release image handlers as each settles.
     // Immutable satellite URLs already loaded need no new preload on refresh.
     const pump = () => {
-      while (!cancelled && active.size < 2 && next < pending.length) {
+      while (!cancelled && active.size < 4 && next < pending.length) {
         const u = pending[next++]
         attempts.set(u, (attempts.get(u) ?? 0) + 1)
         const img = new Image()
@@ -85,8 +89,10 @@ function usePreloadedFrames(urls: string[], series: string) {
           if (cancelled || settled) return
           settled = true
           release()
+          checked.add(u)
           if (!exists && attempts.get(u)! < 3) {
             pending.push(u)
+            report()
             pump()
             return
           }
@@ -96,7 +102,7 @@ function usePreloadedFrames(urls: string[], series: string) {
           pump()
         }
         // A hung request must not prevent all other frames from becoming ready.
-        const timeout = window.setTimeout(() => tick(false), 45_000)
+        const timeout = window.setTimeout(() => tick(false), 20_000)
         active.add(release)
         img.onload = () => tick(true)
         img.onerror = () => tick(false)

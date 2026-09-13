@@ -29,7 +29,7 @@ export default function SynchronizedFrames({ urls, onBuffering, ...props }: HTML
           load(url, attempt + 1).then(resolve, reject)
         } else reject(new Error('Frame unavailable'))
       }
-      const timer = window.setTimeout(() => finish(false), 45_000)
+      const timer = window.setTimeout(() => finish(false), 20_000)
       timers.add(timer)
       image.onerror = () => finish(false)
       image.onload = () => {
@@ -38,14 +38,11 @@ export default function SynchronizedFrames({ urls, onBuffering, ...props }: HTML
       }
       image.src = url
     })
-    // Sequential decoding bounds peak memory on machines with little RAM.
+    // Only this visible scan is decoded; channels load concurrently.
     void (async () => {
       try {
-        const ready: HTMLImageElement[] = []
-        for (const url of urls) {
-          ready.push(await load(url))
-          if (cancelled) return
-        }
+        const ready = await Promise.all(urls.map((url) => load(url)))
+        if (cancelled) return
         const canvases = root.current?.querySelectorAll('canvas')
         if (!canvases || canvases.length !== ready.length) return
         const contexts = Array.from(canvases, (canvas) => canvas.getContext('2d'))
